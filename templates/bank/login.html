@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CreditBridge - Banking Intelligence Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #050510;
+            --bg-panel: #0a0f1c;
+            --bg-card: #0f1629;
+            --bg-input: #0c1221;
+            --border-subtle: #1a2744;
+            --border-glow: #3b82f6;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #22c55e;
+            --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* Animation Keyframes */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes logoPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+            }
+
+            50% {
+                transform: scale(1.03);
+                box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+            }
+        }
+
+        @keyframes glowPulse {
+
+            0%,
+            100% {
+                opacity: 0.6;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+            opacity: 0;
+        }
+
+        .animate-fade-in-left {
+            animation: fadeInLeft 0.6s ease-out forwards;
+            opacity: 0;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        .animate-slide-down {
+            animation: slideDown 0.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        .delay-1 {
+            animation-delay: 0.1s;
+        }
+
+        .delay-2 {
+            animation-delay: 0.2s;
+        }
+
+        .delay-3 {
+            animation-delay: 0.35s;
+        }
+
+        .delay-4 {
+            animation-delay: 0.5s;
+        }
+
+        .delay-5 {
+            animation-delay: 0.6s;
+        }
+
+        .delay-6 {
+            animation-delay: 0.7s;
+        }
+
+        .delay-7 {
+            animation-delay: 0.85s;
+        }
+
+        .delay-8 {
+            animation-delay: 1.0s;
+        }
+
+        /* Main Layout */
+        .main-container {
+            flex: 1;
+            display: flex;
+            position: relative;
+        }
+
+        /* Left Panel */
+        .showcase-panel {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #neuralCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .showcase-overlay {
+            position: relative;
+            z-index: 10;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 2.5rem 3rem;
+        }
+
+        /* Header */
+        .showcase-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 3rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+        }
+
+        .brand-logo {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+
+        .brand-logo i {
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .brand-text h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .brand-text span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.25rem;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 24px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: glowPulse 2s ease-in-out infinite;
+            box-shadow: 0 0 10px var(--accent-green);
+        }
+
+        .system-status span {
+            font-size: 0.875rem;
+            color: var(--accent-green);
+            font-weight: 500;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-width: 640px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.625rem;
+            padding: 0.5rem 1rem;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 24px;
+            font-size: 0.875rem;
+            color: var(--accent-blue);
+            width: fit-content;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+
+        .hero-badge i {
+            font-size: 1rem;
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+
+        .hero-title {
+            font-size: 3.25rem;
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 1.25rem;
+        }
+
+        .hero-title .gradient {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-description {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            max-width: 540px;
+            margin-bottom: 2.5rem;
+        }
+
+        /* Capability Cards */
+        .capabilities {
+            display: flex;
+            gap: 1.25rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .capability-card {
+            flex: 1;
+            padding: 1.5rem;
+            background: rgba(15, 22, 41, 0.8);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: default;
+        }
+
+        .capability-card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-8px) scale(1.03);
+            box-shadow:
+                0 25px 50px rgba(59, 130, 246, 0.25),
+                0 0 30px rgba(59, 130, 246, 0.15),
+                0 0 0 1px rgba(59, 130, 246, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            background: linear-gradient(180deg, rgba(59, 130, 246, 0.08) 0%, rgba(15, 22, 41, 1) 100%);
+        }
+
+        .capability-card .icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(59, 130, 246, 0.15);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            transition: all 0.35s ease;
+        }
+
+        .capability-card:hover .icon {
+            background: rgba(59, 130, 246, 0.3);
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.5), 0 0 10px rgba(59, 130, 246, 0.3);
+            transform: scale(1.1);
+        }
+
+        .capability-card .icon i {
+            font-size: 1.25rem;
+            color: var(--accent-blue);
+        }
+
+        .capability-card h3 {
+            font-size: 1.0625rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .capability-card p {
+            font-size: 0.9375rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Trust Badges */
+        .trust-badges {
+            display: flex;
+            gap: 1.5rem;
+            padding-top: 1.75rem;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .trust-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+        }
+
+        .trust-badge i {
+            font-size: 1.125rem;
+            color: var(--accent-green);
+        }
+
+        .trust-badge span {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Stats Ticker */
+        .stats-ticker {
+            position: relative;
+            z-index: 20;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-subtle);
+            padding: 1rem 0;
+            overflow: hidden;
+        }
+
+        .ticker-track {
+            display: flex;
+            animation: ticker 45s linear infinite;
+        }
+
+        @keyframes ticker {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        .ticker-item {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            padding: 0 2.5rem;
+            white-space: nowrap;
+        }
+
+        .ticker-item .value {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        .ticker-item .label {
+            font-size: 0.9375rem;
+            color: var(--text-secondary);
+        }
+
+        .ticker-item .divider {
+            width: 5px;
+            height: 5px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            margin-left: 1.25rem;
+        }
+
+        /* Right Panel - Login */
+        .login-panel {
+            width: 440px;
+            min-width: 440px;
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 3rem;
+        }
+
+        .login-header {
+            margin-bottom: 2rem;
+        }
+
+        .login-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.625rem;
+        }
+
+        .login-header p {
+            font-size: 0.9375rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 1.375rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 0.625rem;
+        }
+
+        .form-input {
+            width: 100%;
+            height: 52px;
+            padding: 0 1rem;
+            font-size: 1rem;
+            font-family: inherit;
+            color: var(--text-primary);
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15), 0 0 20px rgba(59, 130, 246, 0.1);
+            background: var(--bg-card);
+        }
+
+        .form-select {
+            width: 100%;
+            height: 52px;
+            padding: 0 1rem;
+            font-size: 1rem;
+            font-family: inherit;
+            color: var(--text-secondary);
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            transition: all 0.25s ease;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+        }
+
+        .input-icon-group {
+            position: relative;
+        }
+
+        .input-icon-group .icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            transition: color 0.25s ease;
+        }
+
+        .input-icon-group .form-input:focus+.icon,
+        .input-icon-group:focus-within .icon {
+            color: var(--accent-blue);
+        }
+
+        .input-icon-group .form-input {
+            padding-left: 3rem;
+        }
+
+        .btn-primary {
+            width: 100%;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.625rem;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: inherit;
+            color: white;
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow:
+                0 20px 40px rgba(59, 130, 246, 0.4),
+                0 0 40px rgba(59, 130, 246, 0.2),
+                0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(-1px) scale(1.01);
+        }
+
+        /* Security Info */
+        .security-info {
+            margin-top: 2rem;
+            padding-top: 1.75rem;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .security-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .security-row i {
+            font-size: 1rem;
+            color: var(--accent-green);
+        }
+
+        .security-row span {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+        }
+
+        .version-info {
+            margin-top: 1.75rem;
+            text-align: center;
+        }
+
+        .version-info span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+
+        /* Role Badge Strip */
+        .role-strip {
+            margin-top: 1.5rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .role-strip-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.875rem;
+            text-align: center;
+        }
+
+        .role-badges {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .role-badge {
+            position: relative;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            cursor: default;
+            transition: all 0.2s ease;
+        }
+
+        .role-badge:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .role-badge-content {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .role-badge-icon {
+            font-size: 0.875rem;
+        }
+
+        .role-badge-name {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .role-badge:hover .role-badge-name {
+            color: var(--text-primary);
+        }
+
+        .role-badge-tooltip {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%) scale(0.95);
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            font-size: 0.6875rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .role-badge-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: var(--border-subtle);
+        }
+
+        .role-badge:hover .role-badge-tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) scale(1);
+        }
+
+        /* Alert */
+        .alert {
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.9375rem;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: #fca5a5;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .showcase-panel {
+                display: none;
+            }
+
+            .login-panel {
+                width: 100%;
+                min-width: 100%;
+                border-left: none;
+                min-height: 100vh;
+            }
+
+            .stats-ticker {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <!-- Left Panel -->
+        <div class="showcase-panel">
+            <canvas id="neuralCanvas"></canvas>
+
+            <div class="showcase-overlay">
+                <!-- Header -->
+                <div class="showcase-header">
+                    <div class="brand animate-slide-down">
+                        <div class="brand-logo">
+                            <i class="bi bi-lightning-charge-fill"></i>
+                        </div>
+                        <div class="brand-text">
+                            <h1>CreditBridge</h1>
+                            <span>Banking Intelligence Platform</span>
+                        </div>
+                    </div>
+                    <div class="system-status animate-fade-in delay-2">
+                        <span class="status-dot"></span>
+                        <span>All Systems Operational</span>
+                    </div>
+                </div>
+
+                <!-- Hero -->
+                <div class="hero-section">
+                    <div class="hero-badge animate-fade-in-up delay-1">
+                        <i class="bi bi-cpu"></i>
+                        <span>Powered by Advanced AI</span>
+                    </div>
+
+                    <h2 class="hero-title animate-fade-in-up delay-2">
+                        AI-Driven Credit<br>
+                        <span class="gradient">Decisioning</span>
+                    </h2>
+
+                    <p class="hero-description animate-fade-in-up delay-3">
+                        Process loan applications in seconds with AI-powered risk assessment.
+                    </p>
+
+                    <!-- Capabilities -->
+                    <div class="capabilities">
+                        <div class="capability-card animate-fade-in-up delay-4">
+                            <div class="icon"><i class="bi bi-graph-up-arrow"></i></div>
+                            <h3>Risk Analysis</h3>
+                            <p>Instantly spot high-risk patterns before approval</p>
+                        </div>
+                        <div class="capability-card animate-fade-in-up delay-5">
+                            <div class="icon"><i class="bi bi-file-earmark-check"></i></div>
+                            <h3>Document Verification</h3>
+                            <p>Documents verified automatically in seconds</p>
+                        </div>
+                        <div class="capability-card animate-fade-in-up delay-6">
+                            <div class="icon"><i class="bi bi-speedometer2"></i></div>
+                            <h3>Instant Scoring</h3>
+                            <p>From application to decision in one click</p>
+                        </div>
+                    </div>
+
+                    <!-- Trust Badges -->
+                    <div class="trust-badges animate-fade-in delay-7">
+                        <div class="trust-badge">
+                            <i class="bi bi-shield-check"></i>
+                            <span>Enterprise Security</span>
+                        </div>
+                        <div class="trust-badge">
+                            <i class="bi bi-lock"></i>
+                            <span>Encrypted Data</span>
+                        </div>
+                        <div class="trust-badge">
+                            <i class="bi bi-clipboard-data"></i>
+                            <span>Audit Logging</span>
+                        </div>
+                        <div class="trust-badge">
+                            <i class="bi bi-people"></i>
+                            <span>Role-Based Access</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Platform Features Ticker -->
+            <div class="stats-ticker animate-fade-in-up delay-8">
+                <div class="ticker-track">
+                    <div class="ticker-item"><span class="value"><i class="bi bi-cpu"></i></span><span
+                            class="label">Machine Learning Scoring</span><span class="divider"></span></div>
+                    <div class="ticker-item"><span class="value"><i class="bi bi-file-earmark-check"></i></span><span
+                            class="label">AI Document Analysis</span><span class="divider"></span></div>
+                    <div class="ticker-item"><span class="value"><i class="bi bi-graph-up"></i></span><span
+                            class="label">Behavioral Analytics</span><span class="divider"></span></div>
+                    <div class="ticker-item"><span class="value"><i class="bi bi-shield-check"></i></span><span
+                            class="label">Fraud Detection</span><span class="divider"></span></div>
+                    <div class="ticker-item"><span class="value"><i class="bi bi-building"></i></span><span
+                            class="label">Multi-Branch Support</span><span class="divider"></span></div>
+                    <div class="ticker-item"><span class="value"><i class="bi bi-people"></i></span><span
+                            class="label">Role-Based Workflow</span><span class="divider"></span></div>
+                    <!-- Duplicate for loop -->
+                    <div class="ticker-item"><span class="value"><i class="bi bi-cpu"></i></span><span
+                            class="label">Machine Learning Scoring</span><span class="divider"></span></div>
+                    <div class="ticker-item"><span class="value"><i class="bi bi-file-earmark-check"></i></span><span
+                            class="label">AI Document Analysis</span><span class="divider"></span></div>
+                    <div class="ticker-item"><span class="value"><i class="bi bi-graph-up"></i></span><span
+                            class="label">Behavioral Analytics</span><span class="divider"></span></div>
+                    <div class="ticker-item"><span class="value"><i class="bi bi-shield-check"></i></span><span
+                            class="label">Fraud Detection</span><span class="divider"></span></div>
+                    <div class="ticker-item"><span class="value"><i class="bi bi-building"></i></span><span
+                            class="label">Multi-Branch Support</span><span class="divider"></span></div>
+                    <div class="ticker-item"><span class="value"><i class="bi bi-people"></i></span><span
+                            class="label">Role-Based Workflow</span><span class="divider"></span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel - Login -->
+        <div class="login-panel">
+            <div class="login-header animate-fade-in-left delay-2">
+                <h2>Staff Authentication</h2>
+                <p>Access the credit assessment platform with your employee credentials</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}
+            <div class="alert animate-fade-in">
+                <i class="bi bi-exclamation-circle"></i>
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}{% endif %}
+            {% endwith %}
+
+            <form action="{{ url_for('bank_login') }}" method="POST">
+                <div class="form-group animate-fade-in-left delay-3">
+                    <label class="form-label">Employee ID</label>
+                    <div class="input-icon-group">
+                        <input type="text" name="username" class="form-input" placeholder="Enter employee ID" required
+                            autofocus>
+                        <i class="bi bi-person icon"></i>
+                    </div>
+                </div>
+
+                <div class="form-group animate-fade-in-left delay-4">
+                    <label class="form-label">Password</label>
+                    <div class="input-icon-group">
+                        <input type="password" name="password" class="form-input" placeholder="Enter password" required>
+                        <i class="bi bi-lock icon"></i>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary animate-fade-in-left delay-5">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    Sign in to Platform
+                </button>
+            </form>
+
+            <div class="security-info animate-fade-in delay-7">
+                <div class="security-row">
+                    <i class="bi bi-shield-lock"></i>
+                    <span>Secured with bank-grade encryption</span>
+                </div>
+                <div class="security-row">
+                    <i class="bi bi-clock-history"></i>
+                    <span>Session auto-locks after 15 minutes of inactivity</span>
+                </div>
+                <div class="security-row">
+                    <i class="bi bi-geo-alt"></i>
+                    <span>Logging IP address and device for audit trail</span>
+                </div>
+            </div>
+
+            <div class="version-info animate-fade-in delay-8">
+                <span>CreditBridge v2.4.1 • ML Engine v1.8 • API v3.2</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Enhanced Neural Network Animation
+        const canvas = document.getElementById('neuralCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let nodes = [];
+        let dataPackets = [];
+
+        function resize() {
+            width = canvas.width = canvas.offsetWidth;
+            height = canvas.height = canvas.offsetHeight;
+            initNodes();
+        }
+
+        function initNodes() {
+            nodes = [];
+            const nodeCount = Math.floor((width * height) / 12000); // More nodes
+
+            for (let i = 0; i < nodeCount; i++) {
+                nodes.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    vx: (Math.random() - 0.5) * 0.6, // Faster movement
+                    vy: (Math.random() - 0.5) * 0.6,
+                    radius: Math.random() * 2.5 + 1.5, // Larger nodes
+                    pulseOffset: Math.random() * Math.PI * 2,
+                    brightness: 0.5 + Math.random() * 0.5
+                });
+            }
+        }
+
+        resize();
+        window.addEventListener('resize', resize);
+
+        function animate() {
+            ctx.fillStyle = 'rgba(5, 5, 16, 0.12)'; // Slower fade for trails
+            ctx.fillRect(0, 0, width, height);
+
+            const time = Date.now() * 0.001;
+
+            // Draw connections first
+            nodes.forEach((node, i) => {
+                nodes.forEach((otherNode, j) => {
+                    if (i >= j) return;
+
+                    const dx = node.x - otherNode.x;
+                    const dy = node.y - otherNode.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 180) { // Increased connection distance
+                        const alpha = (1 - dist / 180) * 0.35; // More visible
+
+                        ctx.beginPath();
+                        ctx.moveTo(node.x, node.y);
+                        ctx.lineTo(otherNode.x, otherNode.y);
+                        ctx.strokeStyle = `rgba(139, 92, 246, ${alpha})`;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+
+                        // Data flow particles (more frequent)
+                        if (Math.random() < 0.025) {
+                            const progress = (time * 0.8 + Math.random()) % 1;
+                            const flowX = node.x + (otherNode.x - node.x) * progress;
+                            const flowY = node.y + (otherNode.y - node.y) * progress;
+
+                            ctx.beginPath();
+                            ctx.arc(flowX, flowY, 2.5, 0, Math.PI * 2);
+                            ctx.fillStyle = `rgba(6, 182, 212, ${alpha * 2.5})`;
+                            ctx.fill();
+
+                            // Glow effect
+                            ctx.beginPath();
+                            ctx.arc(flowX, flowY, 5, 0, Math.PI * 2);
+                            ctx.fillStyle = `rgba(6, 182, 212, ${alpha * 0.5})`;
+                            ctx.fill();
+                        }
+                    }
+                });
+            });
+
+            // Update and draw nodes
+            nodes.forEach((node, i) => {
+                node.x += node.vx;
+                node.y += node.vy;
+
+                if (node.x < 0 || node.x > width) node.vx *= -1;
+                if (node.y < 0 || node.y > height) node.vy *= -1;
+
+                const pulse = Math.sin(time * 1.5 + node.pulseOffset) * 0.4 + 0.6; // Faster pulse
+                const radius = node.radius * pulse;
+
+                // Outer glow
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, radius * 3, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(59, 130, 246, ${0.08 * pulse * node.brightness})`;
+                ctx.fill();
+
+                // Inner glow
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, radius * 1.8, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(59, 130, 246, ${0.15 * pulse * node.brightness})`;
+                ctx.fill();
+
+                // Core
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(99, 130, 246, ${0.6 * pulse * node.brightness})`;
+                ctx.fill();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+    </script>
+</body>
+
+</html>

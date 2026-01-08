@@ -1,0 +1,214 @@
+{% extends "bank_base.html" %}
+
+{% block title %}Loan Officer Dashboard - CreditBridge{% endblock %}
+
+{% block page_title %}My Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h1 class="page-title mb-0">
+                <i class="bi bi-person-workspace me-2"></i>My Dashboard
+            </h1>
+            <p class="text-muted mb-0">Welcome back, {{ employee.full_name }}!</p>
+        </div>
+        <div class="col-auto">
+            <span class="badge"
+                style="background: linear-gradient(135deg, #10b981, #059669); font-size: 0.9rem; padding: 8px 16px;">
+                <i class="bi bi-person-badge me-1"></i>Loan Officer
+            </span>
+        </div>
+    </div>
+
+    <!-- Productivity Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card metric-card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="avatar-sm bg-success bg-opacity-10 rounded-circle p-3">
+                                <i class="bi bi-calendar-check text-success fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1 text-muted">Today</h6>
+                            <h3 class="mb-0 fw-bold">{{ stats.productivity.assessments_today }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card metric-card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle p-3">
+                                <i class="bi bi-calendar-week text-primary fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1 text-muted">This Week</h6>
+                            <h3 class="mb-0 fw-bold">{{ stats.productivity.assessments_this_week }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card metric-card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="avatar-sm bg-info bg-opacity-10 rounded-circle p-3">
+                                <i class="bi bi-calendar-month text-info fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1 text-muted">This Month</h6>
+                            <h3 class="mb-0 fw-bold">{{ stats.productivity.assessments_this_month }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card metric-card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="avatar-sm bg-warning bg-opacity-10 rounded-circle p-3">
+                                <i class="bi bi-speedometer2 text-warning fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1 text-muted">Productivity</h6>
+                            <h3 class="mb-0 fw-bold">{{ stats.productivity.productivity_score | int }}%</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assessment Status Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center py-4" style="border-left: 4px solid #6366f1 !important;">
+                <h3 class="fw-bold text-primary mb-1">{{ stats.my_drafts }}</h3>
+                <p class="text-muted mb-0">Draft</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center py-4" style="border-left: 4px solid #f59e0b !important;">
+                <h3 class="fw-bold text-warning mb-1">{{ stats.my_pending }}</h3>
+                <p class="text-muted mb-0">Pending Review</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center py-4" style="border-left: 4px solid #10b981 !important;">
+                <h3 class="fw-bold text-success mb-1">{{ stats.my_approved }}</h3>
+                <p class="text-muted mb-0">Approved</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center py-4" style="border-left: 4px solid #ef4444 !important;">
+                <h3 class="fw-bold text-danger mb-1">{{ stats.my_rejected }}</h3>
+                <p class="text-muted mb-0">Rejected</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions & Recent Assessments -->
+    <div class="row g-4">
+        <!-- Quick Actions -->
+        <div class="col-xl-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 py-3">
+                    <h5 class="mb-0"><i class="bi bi-lightning-fill me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-3">
+                        <a href="{{ url_for('bank_assessment_new') }}" class="btn btn-primary btn-lg">
+                            <i class="bi bi-plus-circle me-2"></i>New Assessment
+                        </a>
+                        <a href="{{ url_for('bank_applications') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-folder2-open me-2"></i>My Applications
+                        </a>
+                        <a href="{{ url_for('bank_customers') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-people me-2"></i>My Customers
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Assessments -->
+        <div class="col-xl-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>My Recent Assessments</h5>
+                    <a href="{{ url_for('bank_applications') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Applicant</th>
+                                    <th>Score</th>
+                                    <th>Risk</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assessment in stats.recent_assessments %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('bank_assessment_result', id=assessment.id) }}"
+                                            class="text-decoration-none fw-medium">
+                                            {{ assessment.user.name }}
+                                        </a>
+                                    </td>
+                                    <td><span class="fw-bold">{{ assessment.credit_score }}</span></td>
+                                    <td>
+                                        {% if assessment.risk_category == 'Low' %}
+                                        <span class="badge bg-success">Low</span>
+                                        {% elif assessment.risk_category == 'Medium' %}
+                                        <span class="badge bg-warning text-dark">Medium</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">High</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="badge bg-{{ 'success' if assessment.status == 'approved' else 'warning' if 'pending' in assessment.status else 'info' if assessment.status == 'draft' else 'secondary' }}">
+                                            {{ assessment.status | replace('_', ' ') | title }}
+                                        </span>
+                                    </td>
+                                    <td class="text-muted">{{ assessment.assessment_date.strftime('%d %b') }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        No assessments yet. Create your first assessment!
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

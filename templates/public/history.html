@@ -1,0 +1,167 @@
+{% extends "public_base.html" %}
+
+{% block title %}Score History - CreditBridge{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold mb-1">Score History</h2>
+            <p class="text-muted">Track your credit score journey over time</p>
+        </div>
+    </div>
+
+    {% if score_history %}
+    <div class="row g-4">
+        <!-- Score Trend Chart -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-graph-up-arrow me-2"></i>Score Trend
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="historyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Current Score</h6>
+                    <h2
+                        class="fw-bold mb-0 {% if score_history[0].score >= 750 %}text-success{% elif score_history[0].score >= 600 %}text-warning{% else %}text-danger{% endif %}">
+                        {{ score_history[0].score }}
+                    </h2>
+                </div>
+            </div>
+
+            {% if score_history | length > 1 %}
+            {% set score_change = score_history[0].score - score_history[-1].score %}
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Overall Change</h6>
+                    <h2
+                        class="fw-bold mb-0 {% if score_change > 0 %}text-success{% elif score_change < 0 %}text-danger{% else %}text-muted{% endif %}">
+                        {% if score_change > 0 %}+{% endif %}{{ score_change }}
+                    </h2>
+                    <small class="text-muted">points</small>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Total Assessments</h6>
+                    <h2 class="fw-bold mb-0 text-primary">{{ score_history | length }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-clock-history me-2"></i>Assessment History
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Credit Score</th>
+                                    <th>Change</th>
+                                    <th>Risk Category</th>
+                                    <th>Documents</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in score_history %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-medium">{{ entry.created_at.strftime('%d %b %Y') }}</div>
+                                        <small class="text-muted">{{ entry.created_at.strftime('%I:%M %p') }}</small>
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="fw-bold fs-5 {% if entry.score >= 750 %}text-success{% elif entry.score >= 600 %}text-warning{% else %}text-danger{% endif %}">
+                                            {{ entry.score }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if not loop.last %}
+                                        {% set prev_score = score_history[loop.index].score %}
+                                        {% set change = entry.score - prev_score %}
+                                        <span
+                                            class="{% if change > 0 %}text-success{% elif change < 0 %}text-danger{% else %}text-muted{% endif %}">
+                                            {% if change > 0 %}<i class="bi bi-arrow-up"></i>+{% elif change < 0 %}<i
+                                                class="bi bi-arrow-down"></i>{% endif %}{{ change }}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="badge-risk {% if 'Low' in entry.risk_category %}badge-low{% elif 'Medium' in entry.risk_category %}badge-medium{% else %}badge-high{% endif %}">
+                                            {{ entry.risk_category }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">
+                                            <i class="bi bi-file-earmark"></i> {{ entry.document_count }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('public_result', id=entry.assessment_id) }}"
+                                            class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="empty-state">
+                        <i class="bi bi-clock-history"></i>
+                        <h5>No Assessment History</h5>
+                        <p class="mb-4">Complete your first credit assessment to start tracking your score</p>
+                        <a href="{{ url_for('public_assessment') }}" class="btn btn-primary">
+                            <i class="bi bi-calculator"></i> Get Your Score
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if score_history %}
+<script>
+    const historyData = [
+        {% for entry in score_history | reverse %}
+    { date: '{{ entry.created_at.strftime("%d %b") }}', score: { { entry.score } } } {% if not loop.last %}, {% endif %}
+    {% endfor %}
+    ];
+    CreditBridge.createScoreHistoryChart('historyChart', historyData);
+</script>
+{% endif %}
+{% endblock %}

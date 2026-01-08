@@ -1,0 +1,152 @@
+{% extends "bank_base.html" %}
+
+{% block title %}Applications - Bank Portal{% endblock %}
+
+{% block page_title %}Applications{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h2 class="fw-bold mb-1">Applications</h2>
+                    <p class="text-muted mb-0">All processed credit assessments</p>
+                </div>
+                {% if session.employee_role in ['loan_officer', 'credit_manager', 'branch_manager', 'head_of_bank'] %}
+                <a href="{{ url_for('bank_assessment_new') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> New Assessment
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Applications Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if applications.items %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Applicant</th>
+                            <th>Contact</th>
+                            <th>Score</th>
+                            <th>Risk</th>
+                            <th>Repayment Prob.</th>
+                            <th>Processed By</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assessment in applications.items %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-light text-dark">#{{ assessment.id }}</span>
+                            </td>
+                            <td>
+                                <div class="fw-medium">{{ assessment.user.name }}</div>
+                                {% if assessment.user.pan_card %}
+                                <small class="text-muted">{{ assessment.user.pan_card }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>+91 {{ assessment.user.phone }}</div>
+                                {% if assessment.user.email %}
+                                <small class="text-muted">{{ assessment.user.email }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span
+                                    class="fw-bold fs-5 {% if assessment.credit_score >= 750 %}text-success{% elif assessment.credit_score >= 600 %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ assessment.credit_score }}
+                                </span>
+                            </td>
+                            <td>
+                                <span
+                                    class="badge-risk {% if 'Low' in assessment.risk_category %}badge-low{% elif 'Medium' in assessment.risk_category %}badge-medium{% else %}badge-high{% endif %}">
+                                    {{ assessment.risk_category }}
+                                </span>
+                            </td>
+                            <td>{{ (assessment.repayment_probability * 100) | round(1) }}%</td>
+                            <td>
+                                <small>{{ assessment.processor.full_name if assessment.processor else 'System'
+                                    }}</small>
+                            </td>
+                            <td>
+                                <small>{{ assessment.assessment_date.strftime('%d %b %Y') }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('bank_assessment_result', id=assessment.id) }}"
+                                        class="btn btn-outline-primary" data-bs-toggle="tooltip" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('bank_download_report', id=assessment.id) }}"
+                                        class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Download PDF">
+                                        <i class="bi bi-file-pdf"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if applications.pages > 1 %}
+            <div class="card-footer">
+                <nav>
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if applications.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('bank_applications', page=applications.prev_num) }}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for page_num in applications.iter_pages(left_edge=1, right_edge=1, left_current=2,
+                        right_current=2) %}
+                        {% if page_num %}
+                        <li class="page-item {% if page_num == applications.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('bank_applications', page=page_num) }}">{{ page_num
+                                }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if applications.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('bank_applications', page=applications.next_num) }}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="empty-state py-5">
+                <i class="bi bi-inbox"></i>
+                <h5>No Applications Yet</h5>
+                <p class="mb-3">Start processing customer assessments to see them here</p>
+                {% if session.employee_role in ['loan_officer', 'credit_manager', 'branch_manager', 'head_of_bank'] %}
+                <a href="{{ url_for('bank_assessment_new') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Create First Assessment
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

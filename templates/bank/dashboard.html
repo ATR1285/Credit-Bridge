@@ -1,0 +1,181 @@
+{% extends "bank_base.html" %}
+
+{% block title %}Dashboard - Bank Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h2 class="fw-bold mb-1">Dashboard</h2>
+                    <p class="text-muted mb-0">Welcome, {{ session.employee_name }} ({{ session.employee_role }})</p>
+                </div>
+                {% if session.employee_role in ['loan_officer', 'credit_manager', 'branch_manager', 'head_of_bank'] %}
+                <a href="{{ url_for('bank_assessment_new') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> New Assessment
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="card stat-card primary">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="stat-label mb-1">Total Assessments</p>
+                            <h2 class="stat-value mb-0">{{ stats.total_assessments }}</h2>
+                        </div>
+                        <i class="bi bi-file-earmark-text stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="card stat-card success">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="stat-label mb-1">Today's Assessments</p>
+                            <h2 class="stat-value mb-0">{{ stats.today_assessments }}</h2>
+                        </div>
+                        <i class="bi bi-calendar-check stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="card stat-card warning">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="stat-label mb-1">Medium Risk</p>
+                            <h2 class="stat-value mb-0">{{ stats.risk_distribution.medium }}</h2>
+                        </div>
+                        <i class="bi bi-exclamation-triangle stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="card stat-card danger">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="stat-label mb-1">High Risk</p>
+                            <h2 class="stat-value mb-0">{{ stats.risk_distribution.high }}</h2>
+                        </div>
+                        <i class="bi bi-shield-exclamation stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Risk Distribution Chart -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <i class="bi bi-pie-chart me-2"></i>Risk Distribution
+                </div>
+                <div class="card-body">
+                    {% if stats.total_assessments > 0 %}
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="riskPieChart"></canvas>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-pie-chart"></i>
+                        <p class="mb-0">No data yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Assessments -->
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-clock-history me-2"></i>Recent Assessments</span>
+                    <a href="{{ url_for('bank_applications') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_assessments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Applicant</th>
+                                    <th>Score</th>
+                                    <th>Risk</th>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assessment in recent_assessments %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-medium">{{ assessment.user.name }}</div>
+                                        <small class="text-muted">{{ assessment.user.phone }}</small>
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="fw-bold {% if assessment.credit_score >= 750 %}text-success{% elif assessment.credit_score >= 600 %}text-warning{% else %}text-danger{% endif %}">
+                                            {{ assessment.credit_score }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="badge-risk {% if 'Low' in assessment.risk_category %}badge-low{% elif 'Medium' in assessment.risk_category %}badge-medium{% else %}badge-high{% endif %}">
+                                            {{ assessment.risk_category }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small>{{ assessment.assessment_date.strftime('%d %b %Y') }}</small>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('bank_assessment_result', id=assessment.id) }}"
+                                            class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state py-4">
+                        <i class="bi bi-inbox"></i>
+                        <h5>No Assessments Yet</h5>
+                        <p class="mb-0">Create your first assessment to see it here</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const riskData = {
+        low: {{ stats.risk_distribution.low }},
+    medium: { { stats.risk_distribution.medium } },
+    high: { { stats.risk_distribution.high } }
+    };
+    CreditBridge.createRiskPieChart('riskPieChart', riskData);
+</script>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "bank_base.html" %}
+
+{% block title %}Audit Logs - CreditBridge{% endblock %}
+
+{% block page_title %}Audit Logs{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h1 class="page-title mb-0">
+                <i class="bi bi-journal-text me-2"></i>Audit Logs
+            </h1>
+            <p class="text-muted mb-0">Complete system activity trail</p>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 160px;">Timestamp</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Entity</th>
+                            <th>Details</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs.items %}
+                        <tr>
+                            <td class="text-muted small">{{ log.timestamp.strftime('%d %b %Y, %H:%M:%S') }}</td>
+                            <td>
+                                {% if log.employee %}
+                                {{ log.employee.full_name }}
+                                {% else %}
+                                <span class="text-muted">System</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span
+                                    class="badge bg-{{ 'success' if log.action in ['CREATE', 'APPROVE'] else 'danger' if log.action in ['DELETE', 'REJECT', 'UNAUTHORIZED_ACCESS'] else 'warning' if log.action == 'UPDATE' else 'info' }}">
+                                    {{ log.action }}
+                                </span>
+                            </td>
+                            <td>
+                                {{ log.entity_type | capitalize }}
+                                {% if log.entity_id %}
+                                <small class="text-muted">#{{ log.entity_id }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted"
+                                style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">
+                                {% if log.details_json %}
+                                {{ log.details_json[:100] }}...
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted">{{ log.ip_address or 'N/A' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">No audit logs found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% if logs.pages > 1 %}
+        <div class="card-footer bg-transparent">
+            <nav>
+                <ul class="pagination pagination-sm mb-0 justify-content-center">
+                    {% for page_num in logs.iter_pages() %}
+                    {% if page_num %}
+                    <li class="page-item {{ 'active' if page_num == logs.page }}">
+                        <a class="page-link" href="{{ url_for('bank_audit_logs', page=page_num) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

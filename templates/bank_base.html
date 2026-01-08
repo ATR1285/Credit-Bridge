@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CreditBridge - Bank Portal{% endblock %}</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
+
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            /* Light mode sidebar - Warm & Clean */
+            --sidebar-bg: #ffffff;
+            --sidebar-hover: #f0f4f3;
+            --sidebar-text: #1f2937;
+            --sidebar-text-muted: #6b7280;
+            --accent-primary: #059669;
+            --accent-secondary: #10b981;
+            /* Light mode defaults - Plain & Clean */
+            --bg-main: #f9fafb;
+            --bg-card: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+        }
+
+        /* Dark Mode - Modern Soft Theme */
+        body.dark-mode {
+            --sidebar-bg: #1f2937;
+            --sidebar-hover: #374151;
+            --sidebar-text: #f9fafb;
+            --sidebar-text-muted: rgba(255, 255, 255, 0.7);
+            --bg-main: #111827;
+            --bg-card: #1f2937;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --border-color: #374151;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-main);
+            min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            color: var(--text-primary);
+        }
+
+        /* Dark Mode - Cards */
+        body.dark-mode .card {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+
+        body.dark-mode .card-header {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+
+        body.dark-mode .card-header.bg-white {
+            background-color: #1f2937 !important;
+        }
+
+        body.dark-mode .card-body {
+            background-color: #1f2937 !important;
+            color: #f9fafb !important;
+        }
+
+        /* Dark Mode - Text */
+        body.dark-mode .text-muted {
+            color: #9ca3af !important;
+        }
+
+        body.dark-mode h1,
+        body.dark-mode h2,
+        body.dark-mode h3,
+        body.dark-mode h4,
+        body.dark-mode h5,
+        body.dark-mode h6,
+        body.dark-mode .fw-bold,
+        body.dark-mode .fw-semibold {
+            color: #f9fafb !important;
+        }
+
+        /* Dark Mode - Tables */
+        body.dark-mode .table {
+            color: #f9fafb !important;
+            --bs-table-bg: transparent;
+        }
+
+        body.dark-mode .table td {
+            color: #f9fafb !important;
+            border-color: #374151 !important;
+        }
+
+        body.dark-mode .table tr {
+            color: #f9fafb !important;
+        }
+
+        body.dark-mode .table td.text-muted {
+            color: #9ca3af !important;
+        }
+
+        body.dark-mode .table-light {
+            background-color: #374151 !important;
+            color: #f9fafb !important;
+        }
+
+        body.dark-mode .table-light th {
+            background-color: #374151 !important;
+            color: #f9fafb !important;
+            border-color: #4b5563 !important;
+        }
+
+        /* Dark Mode - Badges */
+        body.dark-mode .badge.bg-light {
+            background-color: #374151 !important;
+            color: #f9fafb !important;
+        }
+
+        body.dark-mode .badge.bg-light.text-dark {
+            color: #f9fafb !important;
+        }
+
+        /* Dark Mode - Other Elements */
+        body.dark-mode small {
+            color: #9ca3af;
+        }
+
+        body.dark-mode .top-header {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+
+        body.dark-mode .page-title {
+            color: #f9fafb !important;
+        }
+
+        body.dark-mode .footer {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+            color: #9ca3af;
+        }
+
+        body.dark-mode .metric-card {
+            background-color: #1f2937 !important;
+            border-color: #5a6879 !important;
+        }
+
+        body.dark-mode .metric-card h4,
+        body.dark-mode .metric-card .text-uppercase {
+            color: #f7fafc !important;
+        }
+
+        body.dark-mode .progress {
+            background-color: #5a6879;
+        }
+
+        body.dark-mode .alert {
+            background-color: #4a5568 !important;
+            border-color: #5a6879 !important;
+        }
+
+        .theme-toggle {
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle i {
+            font-size: 1rem;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--sidebar-bg);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            overflow-y: auto;
+            border-right: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--sidebar-text);
+            font-weight: 700;
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            text-decoration: none;
+        }
+
+        .sidebar-brand i {
+            font-size: 1.5rem;
+            color: var(--accent-blue);
+        }
+
+        .sidebar-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex: 1;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1rem;
+            color: var(--sidebar-text-muted);
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: var(--sidebar-hover);
+            color: var(--sidebar-text);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+        }
+
+        .nav-link i {
+            font-size: 1.125rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .nav-divider {
+            padding: 1rem 1rem 0.5rem;
+            color: var(--sidebar-text-muted);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+
+        .nav-link .badge {
+            margin-left: auto;
+            font-size: 0.65rem;
+        }
+
+        /* Notification Bell */
+        .notification-bell {
+            position: relative;
+            padding: 0.5rem;
+            cursor: pointer;
+        }
+
+        .notification-bell .badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            font-size: 0.6rem;
+            padding: 0.25em 0.5em;
+        }
+
+        /* Role Badge */
+        .role-badge {
+            font-size: 0.75rem;
+            padding: 0.4rem 0.8rem;
+            font-weight: 500;
+            border-radius: 50px;
+        }
+
+        /* Sidebar Footer / User Section */
+        .sidebar-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 1rem;
+            margin-top: 1rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 10px;
+            background: var(--sidebar-hover);
+            margin-bottom: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-name {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--sidebar-text);
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: var(--sidebar-text-muted);
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            color: #f87171;
+            background: transparent;
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(248, 113, 113, 0.1);
+            color: #f87171;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Header */
+        .top-header {
+            background: var(--bg-card);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .page-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            padding: 0;
+        }
+
+        /* Footer */
+        .footer {
+            background: white;
+            border-top: 1px solid #e2e8f0;
+            padding: 1rem 2rem;
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .mobile-toggle {
+                display: block !important;
+            }
+        }
+
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #1e293b;
+            cursor: pointer;
+        }
+    </style>
+
+    {% block styles %}{% endblock %}
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <a class="sidebar-brand" href="{{ url_for('bank_dashboard') }}">
+            <i class="bi bi-bank2"></i>
+            CreditBridge
+        </a>
+
+        <ul class="sidebar-nav">
+            <!-- Dashboard - Everyone -->
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'bank_dashboard' %}active{% endif %}"
+                    href="{{ url_for('bank_dashboard') }}">
+                    <i class="bi bi-speedometer2"></i>
+                    Dashboard
+                </a>
+            </li>
+
+            {# ============================================================ #}
+            {# ROLE-BASED NAVIGATION - Show only what each role can access #}
+            {# ============================================================ #}
+
+            {# --- HEAD OF BANK & BRANCH MANAGER --- #}
+            {% if session.employee_role.lower() in ['head_of_bank', 'branch_manager'] %}
+
+            {# Note: New Assessment removed - only Loan Officers can create #}
+
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'bank_applications' %}active{% endif %}"
+                    href="{{ url_for('bank_applications') }}">
+                    <i class="bi bi-list-task"></i>
+                    Applications
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'bank_customers' %}active{% endif %}"
+                    href="{{ url_for('bank_customers') }}">
+                    <i class="bi bi-people"></i>
+                    Customers
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'bank_analytics' %}active{% endif %}"
+                    href="{{ url_for('bank_analytics') }}">
+                    <i class="bi bi-graph-up"></i>
+                    Analytics
+                </a>
+            </li>
+
+            <li class="nav-divider"><span>Management</span></li>
+
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'bank_team_management' %}active{% endif %}"
+                    href="{{ url_for('bank_team_management') }}">
+                    <i class="bi bi-people-fill"></i>
+                    Team Management
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'bank_audit_logs' %}active{% endif %}"
+                    href="{{ url_for('bank_audit_logs') }}">
+                    <i class="bi bi-journal-text"></i>
+                    Audit Logs
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'bank_escalations' %}active{% endif %}"
+                    href="{{ url_for('bank_escalations') }}">
+                    <i class="bi bi-exclamation-octagon"></i>
+                    Escalations
+                </a>
+            </li>
+
+            {% endif %}
+
+            {# --- CREDIT MANAGER --- #}
+            {% if session.employee_role.lower() == 'credit_manager' %}
+
+            {# Note: New Assessment removed - only Loan Officers can create #}
+
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'bank_applications' %}active{% endif %}"
+                    href="{{ url_for('bank_applications') }}">
+                    <i class="bi bi-list-task"></i>
+                    Applications
+                </a>
+            </li>
+
+            <li class="nav-divider"><span>Team Review</span></li>
+
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'bank_escalations' %}active{% endif %}"
+                    href="{{ url_for('bank_escalations') }}">
+                    <i class="bi bi-exclamation-octagon"></i>
+                    Escalations
+                </a>
+            </li>
+
+            {% endif %}
+
+            {# --- LOAN OFFICER --- #}
+            {% if session.employee_role.lower() == 'loan_officer' %}
+
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'bank_assessment_new' %}active{% endif %}"
+                    href="{{ url_for('bank_assessment_new') }}">
+                    <i class="bi bi-plus-circle"></i>
+                    New Assessment
+                </a>
+            </li>
+
+            <li class="nav-divider"><span>My Work</span></li>
+
+            <li class="nav-item">
+                <a class="nav-link {% if 'status=draft' in request.url %}active{% endif %}"
+                    href="{{ url_for('bank_dashboard') }}">
+                    <i class="bi bi-file-earmark-text"></i>
+                    My Assessments
+                </a>
+            </li>
+
+            {% endif %}
+
+            {# --- CREDIT ANALYST --- #}
+            {% if session.employee_role.lower() == 'credit_analyst' %}
+
+            <li class="nav-divider"><span>My Work</span></li>
+
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'bank_assigned_queue' %}active{% endif %}"
+                    href="{{ url_for('bank_assigned_queue') }}">
+                    <i class="bi bi-inbox-fill"></i>
+                    Assigned Queue
+                </a>
+            </li>
+
+            {% endif %}
+
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">
+                    {{ session.employee_name[:1] | upper if session.employee_name else 'U' }}
+                </div>
+                <div class="user-details">
+                    <div class="user-name">{{ session.employee_name }}</div>
+                    <div class="user-role">{{ session.employee_role }}</div>
+                </div>
+            </div>
+            <a class="logout-btn" href="{{ url_for('bank_logout') }}">
+                <i class="bi bi-box-arrow-right"></i>
+                Logout
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <header class="top-header">
+            <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('show')">
+                <i class="bi bi-list"></i>
+            </button>
+            <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-outline-secondary btn-sm theme-toggle" onclick="toggleTheme()"
+                    title="Toggle Dark/Light Mode">
+                    <i class="bi bi-moon-fill" id="themeIcon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Flash Messages -->
+        <div class="container-fluid px-4 mt-3">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
+                role="alert">
+                <i
+                    class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'error' or category == 'danger' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+        </div>
+
+        <!-- Content Area -->
+        <main class="content-area">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>CreditBridge Bank Portal</strong>
+                    <span class="text-muted ms-2">Role-Based Access Control Enabled</span>
+                </div>
+                <div>
+                    <i class="bi bi-shield-check me-1"></i>Secure Session |
+                    <a href="mailto:support@creditbridge.in">support@creditbridge.in</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <!-- Theme Toggle Script -->
+    <script>
+        // Check saved theme preference on load
+        (function () {
+            const savedTheme = localStorage.getItem('bankPortalTheme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                updateThemeIcon(true);
+            }
+        })();
+
+        function toggleTheme() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('bankPortalTheme', isDark ? 'dark' : 'light');
+            updateThemeIcon(isDark);
+        }
+
+        function updateThemeIcon(isDark) {
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+                icon.className = isDark ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+            }
+        }
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

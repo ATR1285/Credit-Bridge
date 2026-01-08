@@ -1,0 +1,130 @@
+{% extends "bank_base.html" %}
+
+{% block title %}Customers - Bank Portal{% endblock %}
+
+{% block page_title %}Customers{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h2 class="fw-bold mb-1">Customers</h2>
+                    <p class="text-muted mb-0">Bank-processed customer records</p>
+                </div>
+                {% if session.employee_role in ['loan_officer', 'credit_manager', 'branch_manager', 'head_of_bank'] %}
+                <a href="{{ url_for('bank_assessment_new') }}" class="btn btn-primary">
+                    <i class="bi bi-person-plus"></i> Add Customer
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Customers Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if customers.items %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th>PAN</th>
+                            <th>Registered</th>
+                            <th>Assessments</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for customer in customers.items %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-light text-dark">#{{ customer.id }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
+                                        style="width: 36px; height: 36px;">
+                                        <i class="bi bi-person text-primary"></i>
+                                    </div>
+                                    <span class="fw-medium">{{ customer.name }}</span>
+                                </div>
+                            </td>
+                            <td>+91 {{ customer.phone }}</td>
+                            <td>{{ customer.email or '—' }}</td>
+                            <td>
+                                {% if customer.pan_card %}
+                                <code>{{ customer.pan_card }}</code>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ customer.created_at.strftime('%d %b %Y') }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ customer.assessments | length }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if customers.pages > 1 %}
+            <div class="card-footer">
+                <nav>
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if customers.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('bank_customers', page=customers.prev_num) }}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for page_num in customers.iter_pages(left_edge=1, right_edge=1, left_current=2,
+                        right_current=2) %}
+                        {% if page_num %}
+                        <li class="page-item {% if page_num == customers.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('bank_customers', page=page_num) }}">{{ page_num
+                                }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if customers.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('bank_customers', page=customers.next_num) }}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="empty-state py-5">
+                <i class="bi bi-people"></i>
+                <h5>No Customers Yet</h5>
+                <p class="mb-3">Process customer assessments to build your customer database</p>
+                {% if session.employee_role in ['loan_officer', 'credit_manager', 'branch_manager', 'head_of_bank'] %}
+                <a href="{{ url_for('bank_assessment_new') }}" class="btn btn-primary">
+                    <i class="bi bi-person-plus"></i> Add First Customer
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

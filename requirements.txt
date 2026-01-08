@@ -1,0 +1,40 @@
+# Core Flask
+Flask>=3.0.0
+flask-sqlalchemy>=3.1.0
+flask-cors>=4.0.0
+Werkzeug>=3.0.0
+python-dotenv>=1.0.0
+
+# Database
+psycopg2-binary>=2.9.9
+SQLAlchemy>=2.0.36
+
+# Google OAuth
+authlib>=1.3.0
+requests>=2.31.0
+
+# Machine Learning
+scikit-learn>=1.4.0
+xgboost>=2.0.0
+pandas>=2.2.0
+numpy>=1.26.0
+joblib>=1.3.2
+Faker>=22.0.0
+
+# Document Processing
+pdfplumber>=0.10.0
+PyPDF2>=3.0.0
+pytesseract>=0.3.10
+Pillow>=10.0.0
+opencv-python>=4.9.0
+
+# AI Integration
+google-generativeai>=0.3.0
+
+# PDF Generation
+reportlab>=4.0.0
+matplotlib>=3.8.0
+qrcode>=7.4.0
+
+# Production (Linux only)
+gunicorn>=21.0.0; sys_platform == "linux"

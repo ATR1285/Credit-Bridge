@@ -1,0 +1,400 @@
+{% extends "bank_base.html" %}
+
+{% block title %}New Assessment - CreditBridge{% endblock %}
+
+{% block page_title %}New Assessment{% endblock %}
+
+{% block styles %}
+<style>
+    .form-section {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .section-header {
+        color: #4f46e5;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 3px solid #4f46e5;
+    }
+
+    .form-control,
+    .form-select {
+        border-radius: 10px;
+        border: 2px solid #e5e7eb;
+        padding: 0.75rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+
+    .info-text {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+    }
+
+    .required {
+        color: #ef4444;
+    }
+
+    .submit-section {
+        background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(124, 58, 237, 0.1));
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    /* ═══ DARK MODE STYLES ═══ */
+    body.dark-mode .form-section {
+        background: #1e293b !important;
+        border-color: #334155 !important;
+        color: #e2e8f0 !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    body.dark-mode .section-header {
+        color: #818cf8 !important;
+        border-bottom-color: #6366f1 !important;
+    }
+
+    body.dark-mode .section-header i {
+        color: #818cf8 !important;
+    }
+
+    body.dark-mode .form-label {
+        color: #e2e8f0 !important;
+    }
+
+    body.dark-mode .form-control,
+    body.dark-mode .form-select {
+        background-color: #334155 !important;
+        border-color: #475569 !important;
+        color: #f1f5f9 !important;
+    }
+
+    body.dark-mode .form-control::placeholder {
+        color: #94a3b8 !important;
+    }
+
+    body.dark-mode .form-control:focus,
+    body.dark-mode .form-select:focus {
+        background-color: #3b4861 !important;
+        border-color: #818cf8 !important;
+        box-shadow: 0 0 0 0.2rem rgba(129, 140, 248, 0.25) !important;
+    }
+
+    body.dark-mode .info-text {
+        color: #94a3b8 !important;
+    }
+
+    body.dark-mode .required {
+        color: #f87171 !important;
+    }
+
+    body.dark-mode .submit-section {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2)) !important;
+    }
+
+    /* File input dark mode */
+    body.dark-mode input[type="file"] {
+        background-color: #334155 !important;
+        color: #94a3b8 !important;
+    }
+
+    body.dark-mode input[type="file"]::file-selector-button {
+        background-color: #475569 !important;
+        color: #f1f5f9 !important;
+        border-color: #64748b !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="text-center mb-4">
+            <h1 class="display-5 fw-bold" style="color: white;">
+                <i class="bi bi-clipboard-data"></i> New Credit Assessment
+            </h1>
+            <p style="color: rgba(255,255,255,0.9);">Fill in applicant details for AI-powered credit risk evaluation</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('bank_assessment_new') }}" enctype="multipart/form-data"
+            id="assessmentForm">
+
+            <!-- Personal Information -->
+            <div class="form-section">
+                <h3 class="section-header">
+                    <i class="bi bi-person-vcard"></i> Personal Information
+                </h3>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="name" class="form-label">
+                            Full Name <span class="required">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="name" name="name" placeholder="Enter full name"
+                            required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="phone" class="form-label">
+                            Phone Number <span class="required">*</span>
+                        </label>
+                        <input type="tel" class="form-control" id="phone" name="phone" placeholder="+91 9876543210"
+                            required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email"
+                            placeholder="applicant@example.com">
+                        <div class="info-text">Optional but recommended</div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="pan_card" class="form-label">PAN Card Number</label>
+                        <input type="text" class="form-control" id="pan_card" name="pan_card" placeholder="ABCDE1234F"
+                            maxlength="10" pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}">
+                        <div class="info-text">Format: ABCDE1234F</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Behavior Data -->
+            <div class="form-section">
+                <h3 class="section-header">
+                    <i class="bi bi-graph-up-arrow"></i> Financial Behavior Data
+                </h3>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="monthly_income" class="form-label">
+                            Monthly Income (₹) <span class="required">*</span>
+                        </label>
+                        <input type="number" class="form-control" id="monthly_income" name="monthly_income"
+                            placeholder="45000" min="5000" step="1000" required>
+                        <div class="info-text">Average monthly income from all sources</div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="monthly_expenses" class="form-label">
+                            Monthly Expenses (₹) <span class="required">*</span>
+                        </label>
+                        <input type="number" class="form-control" id="monthly_expenses" name="monthly_expenses"
+                            placeholder="30000" min="1000" step="1000" required>
+                        <div class="info-text">Average monthly spending</div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="income_std_dev" class="form-label">
+                            Income Variation (₹) <span class="required">*</span>
+                        </label>
+                        <input type="number" class="form-control" id="income_std_dev" name="income_std_dev"
+                            placeholder="5000" min="0" step="500" value="0" required>
+                        <div class="info-text">Standard deviation in monthly income (lower is better)</div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="savings_amount" class="form-label">
+                            Total Savings (₹) <span class="required">*</span>
+                        </label>
+                        <input type="number" class="form-control" id="savings_amount" name="savings_amount"
+                            placeholder="100000" min="0" step="5000" value="0" required>
+                        <div class="info-text">Current total savings amount</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Digital Activity -->
+            <div class="form-section">
+                <h3 class="section-header">
+                    <i class="bi bi-credit-card-2-front"></i> Digital Activity & Payment Behavior
+                </h3>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="bill_payment_streak" class="form-label">
+                            Bill Payment Streak <span class="required">*</span>
+                        </label>
+                        <input type="number" class="form-control" id="bill_payment_streak" name="bill_payment_streak"
+                            placeholder="10" min="0" max="24" value="0" required>
+                        <div class="info-text">Consecutive months of on-time payments (max 24)</div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="digital_months" class="form-label">
+                            Digital Banking Period <span class="required">*</span>
+                        </label>
+                        <input type="number" class="form-control" id="digital_months" name="digital_months"
+                            placeholder="12" min="0" max="60" value="0" required>
+                        <div class="info-text">Months using digital banking</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Data (Optional) -->
+            <div class="form-section">
+                <h3 class="section-header">
+                    <i class="bi bi-shop"></i> Business Data (If Self-Employed)
+                </h3>
+                <p class="text-muted mb-3">Leave blank if not applicable or enter 0</p>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="business_revenue" class="form-label">
+                            Monthly Business Revenue (₹)
+                        </label>
+                        <input type="number" class="form-control" id="business_revenue" name="business_revenue"
+                            placeholder="75000" min="0" step="5000" value="0">
+                        <div class="info-text">Average monthly business income</div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="business_expenses" class="form-label">
+                            Monthly Business Expenses (₹)
+                        </label>
+                        <input type="number" class="form-control" id="business_expenses" name="business_expenses"
+                            placeholder="50000" min="0" step="5000" value="0">
+                        <div class="info-text">Average monthly business costs</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Required Documents -->
+            <div class="form-section" style="border: 2px solid #4f46e5;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="section-header mb-0 border-0 pb-0">
+                        <i class="bi bi-shield-lock"></i> Required Documents
+                    </h3>
+                    <span class="badge bg-danger">3 Mandatory</span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="doc_aadhaar" class="form-label">
+                            Aadhaar Card <span class="required">*</span>
+                        </label>
+                        <input type="file" class="form-control" id="doc_aadhaar" name="doc_aadhaar"
+                            accept=".pdf,.jpg,.jpeg,.png" required>
+                        <div class="info-text">PDF, JPG, PNG (Max 5MB)</div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="doc_pan" class="form-label">
+                            PAN Card <span class="required">*</span>
+                        </label>
+                        <input type="file" class="form-control" id="doc_pan" name="doc_pan"
+                            accept=".pdf,.jpg,.jpeg,.png" required>
+                        <div class="info-text">PDF, JPG, PNG (Max 5MB)</div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="doc_bank_statement" class="form-label">
+                            Bank Statement <span class="required">*</span>
+                        </label>
+                        <input type="file" class="form-control" id="doc_bank_statement" name="doc_bank_statement"
+                            accept=".pdf" required>
+                        <div class="info-text">PDF only - Last 3-6 months</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optional Documents -->
+            <div class="form-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="section-header mb-0 border-0 pb-0">
+                        <i class="bi bi-cloud-arrow-up"></i> Additional Documents
+                    </h3>
+                    <span class="badge bg-success">Score Boost</span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="doc_salary_slip" class="form-label">Salary Slip</label>
+                        <input type="file" class="form-control" id="doc_salary_slip" name="doc_salary_slip"
+                            accept=".pdf,.jpg,.jpeg,.png">
+                        <div class="info-text">Recent payslip</div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="doc_itr" class="form-label">ITR Document</label>
+                        <input type="file" class="form-control" id="doc_itr" name="doc_itr" accept=".pdf">
+                        <div class="info-text">Income Tax Return</div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="doc_utility_bill" class="form-label">Utility Bill</label>
+                        <input type="file" class="form-control" id="doc_utility_bill" name="doc_utility_bill"
+                            accept=".pdf,.jpg,.jpeg,.png">
+                        <div class="info-text">Address proof</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Disclaimer & Submit -->
+            <div class="submit-section">
+                <div class="alert alert-info mb-4" role="alert">
+                    <i class="bi bi-info-circle"></i> <strong>Note:</strong> This assessment uses AI/ML algorithms
+                    to evaluate creditworthiness based on behavioral financial data. Results should be reviewed
+                    by authorized personnel before making final lending decisions.
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg px-5">
+                    <i class="bi bi-cpu"></i> Generate Credit Assessment
+                </button>
+
+                <div class="mt-3">
+                    <a href="{{ url_for('bank_dashboard') }}" class="text-muted">
+                        <i class="bi bi-arrow-left"></i> Cancel and return to dashboard
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Form validation
+    document.getElementById('assessmentForm').addEventListener('submit', function (e) {
+        const income = parseFloat(document.getElementById('monthly_income').value);
+        const expenses = parseFloat(document.getElementById('monthly_expenses').value);
+
+        if (expenses > income) {
+            alert('Warning: Monthly expenses exceed monthly income. This may affect credit score.');
+        }
+    });
+
+    // Auto-format PAN card input
+    document.getElementById('pan_card').addEventListener('input', function (e) {
+        this.value = this.value.toUpperCase();
+    });
+
+    // Auto-format phone number
+    document.getElementById('phone').addEventListener('input', function (e) {
+        let value = this.value.replace(/\D/g, '');
+        if (value.length > 10) {
+            value = value.slice(0, 10);
+        }
+        if (value.length === 10 && !this.value.startsWith('+91')) {
+            this.value = '+91 ' + value;
+        }
+    });
+</script>
+{% endblock %}

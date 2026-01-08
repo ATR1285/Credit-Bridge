@@ -1,0 +1,1026 @@
+{% extends "bank_base.html" %}
+
+{% block title %}Analytics Dashboard - Bank Portal{% endblock %}
+
+{% block page_title %}Analytics Dashboard{% endblock %}
+
+{% block styles %}
+<!-- Flatpickr Date Picker -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
+
+<style>
+    /* Analytics-specific styles */
+    .kpi-card {
+        border: none;
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .kpi-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .kpi-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0.5rem 0;
+    }
+
+    .kpi-label {
+        font-size: 0.875rem;
+        color: rgba(255, 255, 255, 0.85);
+        font-weight: 500;
+    }
+
+    .kpi-trend {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .kpi-trend.positive {
+        color: #10b981;
+        background: rgba(16, 185, 129, 0.15);
+    }
+
+    .kpi-trend.negative {
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.15);
+    }
+
+    .kpi-card.primary {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: white;
+    }
+
+    .kpi-card.success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+    }
+
+    .kpi-card.info {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        color: white;
+    }
+
+    .kpi-card.warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+    }
+
+    .chart-card {
+        border: none;
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .chart-card .card-header {
+        background: transparent;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 1.25rem 1.5rem;
+        font-weight: 600;
+        font-size: 1rem;
+        color: #1e293b;
+    }
+
+    .chart-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+
+    .chart-container.radar {
+        height: 350px;
+    }
+
+    /* Date picker styling */
+    .date-picker-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .date-picker-wrapper .form-control {
+        width: 220px;
+        font-size: 0.875rem;
+    }
+
+    /* Export dropdown */
+    .export-btn-group .btn {
+        font-size: 0.875rem;
+    }
+
+    /* Role indicator */
+    .role-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+        border-radius: 50px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #4f46e5;
+    }
+
+    /* Empty state for charts */
+    .chart-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 200px;
+        color: #94a3b8;
+    }
+
+    .chart-empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    /* Table styling */
+    .analytics-table {
+        font-size: 0.875rem;
+    }
+
+    .analytics-table th {
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        background: #f8fafc;
+    }
+
+    .analytics-table td {
+        vertical-align: middle;
+        color: #1e293b;
+    }
+
+    /* Dark mode adjustments */
+    body.dark-mode .chart-card {
+        background: #1e293b;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+
+    body.dark-mode .chart-card .card-header {
+        border-color: #334155;
+        color: #f1f5f9;
+    }
+
+    body.dark-mode .kpi-trend.positive {
+        background: rgba(16, 185, 129, 0.25);
+    }
+
+    body.dark-mode .kpi-trend.negative {
+        background: rgba(239, 68, 68, 0.25);
+    }
+
+    body.dark-mode .role-indicator {
+        background: rgba(79, 70, 229, 0.2);
+        color: #818cf8;
+    }
+
+    body.dark-mode .analytics-table th {
+        background: #0f172a;
+        color: #94a3b8;
+    }
+
+    body.dark-mode .analytics-table td {
+        color: #f1f5f9;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .date-picker-wrapper {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .date-picker-wrapper .form-control {
+            width: 100%;
+        }
+
+        .kpi-value {
+            font-size: 1.5rem;
+        }
+
+        .chart-container {
+            height: 250px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-4">
+            <h4 class="fw-bold mb-1">Analytics Overview</h4>
+            <span class="role-indicator">
+                <i class="bi bi-person-badge"></i>
+                {{ employee.role.replace('_', ' ').title() }} View
+            </span>
+        </div>
+        <div class="col-md-8">
+            <div class="d-flex flex-wrap justify-content-md-end gap-2 mt-3 mt-md-0">
+                <!-- Date Range Picker -->
+                <div class="date-picker-wrapper">
+                    <i class="bi bi-calendar3 text-muted"></i>
+                    <input type="text" id="dateRangePicker" class="form-control" placeholder="Select date range"
+                        value="{{ analytics.date_range.start }} to {{ analytics.date_range.end }}">
+                </div>
+
+                <!-- Export Buttons -->
+                <div class="btn-group export-btn-group">
+                    <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        <i class="bi bi-download me-1"></i> Export
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="exportData('csv'); return false;">
+                                <i class="bi bi-file-earmark-spreadsheet me-2"></i> Export as CSV
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card kpi-card primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="kpi-label mb-0">Total Assessments</p>
+                            <h2 class="kpi-value">{{ analytics.kpis.total_assessments | default(0) }}</h2>
+                            {% if analytics.kpis.total_trend %}
+                            <span class="kpi-trend {{ 'positive' if analytics.kpis.total_trend > 0 else 'negative' }}">
+                                <i
+                                    class="bi bi-{{ 'arrow-up' if analytics.kpis.total_trend > 0 else 'arrow-down' }}"></i>
+                                {{ analytics.kpis.total_trend | abs }}%
+                            </span>
+                            {% endif %}
+                        </div>
+                        <i class="bi bi-file-text" style="font-size: 2.5rem; opacity: 0.3;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card kpi-card success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="kpi-label mb-0">Approval Rate</p>
+                            <h2 class="kpi-value">{{ analytics.kpis.approval_rate | default(0) }}%</h2>
+                            {% if analytics.kpis.approval_trend %}
+                            <span
+                                class="kpi-trend {{ 'positive' if analytics.kpis.approval_trend > 0 else 'negative' }}">
+                                <i
+                                    class="bi bi-{{ 'arrow-up' if analytics.kpis.approval_trend > 0 else 'arrow-down' }}"></i>
+                                {{ analytics.kpis.approval_trend | abs }}%
+                            </span>
+                            {% endif %}
+                        </div>
+                        <i class="bi bi-check-circle" style="font-size: 2.5rem; opacity: 0.3;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card kpi-card info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="kpi-label mb-0">Avg Credit Score</p>
+                            <h2 class="kpi-value">{{ analytics.kpis.avg_credit_score | default(0) | int }}</h2>
+                            {% if analytics.kpis.score_trend %}
+                            <span class="kpi-trend {{ 'positive' if analytics.kpis.score_trend > 0 else 'negative' }}">
+                                <i
+                                    class="bi bi-{{ 'arrow-up' if analytics.kpis.score_trend > 0 else 'arrow-down' }}"></i>
+                                {{ analytics.kpis.score_trend | abs | int }} pts
+                            </span>
+                            {% endif %}
+                        </div>
+                        <i class="bi bi-speedometer2" style="font-size: 2.5rem; opacity: 0.3;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="card kpi-card warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="kpi-label mb-0">Avg Processing Time</p>
+                            <h2 class="kpi-value">{{ analytics.kpis.avg_processing_time | default(0) | int }}m</h2>
+                            {% if analytics.kpis.time_trend %}
+                            <span class="kpi-trend {{ 'positive' if analytics.kpis.time_trend > 0 else 'negative' }}">
+                                <i
+                                    class="bi bi-{{ 'arrow-down' if analytics.kpis.time_trend > 0 else 'arrow-up' }}"></i>
+                                {{ analytics.kpis.time_trend | abs | int }} min
+                            </span>
+                            {% endif %}
+                        </div>
+                        <i class="bi bi-clock-history" style="font-size: 2.5rem; opacity: 0.3;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1: Risk Distribution & Trends -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="card chart-card h-100">
+                <div class="card-header">
+                    <i class="bi bi-pie-chart me-2"></i>Risk Distribution
+                </div>
+                <div class="card-body">
+                    {% if analytics.risk_distribution and analytics.risk_distribution | length > 0 %}
+                    <div class="chart-container">
+                        <canvas id="riskDonutChart"></canvas>
+                    </div>
+                    {% else %}
+                    <div class="chart-empty-state">
+                        <i class="bi bi-pie-chart"></i>
+                        <p class="mb-0">No data available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card chart-card h-100">
+                <div class="card-header">
+                    <i class="bi bi-graph-up me-2"></i>Assessment Trends (12 Weeks)
+                </div>
+                <div class="card-body">
+                    {% if analytics.weekly_trends and analytics.weekly_trends | length > 0 %}
+                    <div class="chart-container">
+                        <canvas id="trendLineChart"></canvas>
+                    </div>
+                    {% else %}
+                    <div class="chart-empty-state">
+                        <i class="bi bi-graph-up"></i>
+                        <p class="mb-0">No trend data available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2: Score Distribution & Approval by Risk -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card chart-card h-100">
+                <div class="card-header">
+                    <i class="bi bi-bar-chart me-2"></i>Score Distribution
+                </div>
+                <div class="card-body">
+                    {% if analytics.score_distribution %}
+                    <div class="chart-container">
+                        <canvas id="scoreHistogram"></canvas>
+                    </div>
+                    {% else %}
+                    <div class="chart-empty-state">
+                        <i class="bi bi-bar-chart"></i>
+                        <p class="mb-0">No score data available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card chart-card h-100">
+                <div class="card-header">
+                    <i class="bi bi-bar-chart-steps me-2"></i>Approval Rate by Risk Category
+                </div>
+                <div class="card-body">
+                    {% if analytics.approval_by_risk %}
+                    <div class="chart-container">
+                        <canvas id="approvalByRiskChart"></canvas>
+                    </div>
+                    {% else %}
+                    <div class="chart-empty-state">
+                        <i class="bi bi-bar-chart-steps"></i>
+                        <p class="mb-0">No approval data available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Behavioral Metrics Radar -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card chart-card">
+                <div class="card-header">
+                    <i class="bi bi-radar me-2"></i>Behavioral Metrics Performance
+                </div>
+                <div class="card-body">
+                    {% if analytics.behavioral_metrics %}
+                    <div class="chart-container radar" style="max-width: 500px; margin: 0 auto;">
+                        <canvas id="behavioralRadar"></canvas>
+                    </div>
+                    {% else %}
+                    <div class="chart-empty-state">
+                        <i class="bi bi-radar"></i>
+                        <p class="mb-0">No behavioral data available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Branch Performance & Top Employees (Managers Only) -->
+    {% if analytics.branch_performance or analytics.top_employees %}
+    <div class="row g-4 mb-4">
+        {% if analytics.branch_performance and analytics.branch_performance | length > 0 %}
+        <div class="col-lg-6">
+            <div class="card chart-card h-100">
+                <div class="card-header">
+                    <i class="bi bi-building me-2"></i>Branch Performance
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="branchPerformanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if analytics.top_employees and analytics.top_employees | length > 0 %}
+        <div
+            class="col-lg-{% if analytics.branch_performance and analytics.branch_performance | length > 0 %}6{% else %}12{% endif %}">
+            <div class="card chart-card h-100">
+                <div class="card-header">
+                    <i class="bi bi-trophy me-2"></i>Top Performing Employees
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover analytics-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Employee</th>
+                                    <th>Role</th>
+                                    <th class="text-center">Assessments</th>
+                                    <th class="text-center">Approval Rate</th>
+                                    <th class="text-center">Avg Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for emp in analytics.top_employees %}
+                                <tr>
+                                    <td>
+                                        {% if loop.index == 1 %}
+                                        <span class="badge bg-warning text-dark"><i
+                                                class="bi bi-trophy-fill"></i></span>
+                                        {% elif loop.index == 2 %}
+                                        <span class="badge bg-secondary">2</span>
+                                        {% elif loop.index == 3 %}
+                                        <span class="badge bg-danger">3</span>
+                                        {% else %}
+                                        <span class="badge bg-light text-dark">{{ loop.index }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="fw-medium">{{ emp.name }}</td>
+                                    <td class="text-muted">{{ emp.role }}</td>
+                                    <td class="text-center"><span class="badge bg-primary">{{ emp.assessments }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span
+                                            class="badge bg-{{ 'success' if emp.approval_rate >= 70 else 'warning' if emp.approval_rate >= 50 else 'danger' }}">
+                                            {{ emp.approval_rate }}%
+                                        </span>
+                                    </td>
+                                    <td class="text-center text-muted">{{ emp.avg_time }}m</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Recent Assessments Table -->
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card chart-card">
+                <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <i class="bi bi-clock-history me-2"></i>Recent Assessments
+                    </div>
+                    <div class="d-flex gap-2">
+                        <select id="statusFilter" class="form-select form-select-sm" style="width: auto;">
+                            <option value="">All Status</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="pending_review">Pending Review</option>
+                            <option value="under_review">Under Review</option>
+                        </select>
+                        <select id="riskFilter" class="form-select form-select-sm" style="width: auto;">
+                            <option value="">All Risk</option>
+                            <option value="Low Risk">Low Risk</option>
+                            <option value="Medium Risk">Medium Risk</option>
+                            <option value="High Risk">High Risk</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if analytics.recent_assessments and analytics.recent_assessments | length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-hover analytics-table mb-0" id="recentAssessmentsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Applicant</th>
+                                    <th class="text-center">Credit Score</th>
+                                    <th class="text-center">Risk Category</th>
+                                    <th class="text-center">Status</th>
+                                    <th>Date</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assessment in analytics.recent_assessments %}
+                                <tr data-status="{{ assessment.status }}" data-risk="{{ assessment.risk_category }}">
+                                    <td><span class="fw-medium">#{{ assessment.id }}</span></td>
+                                    <td>{{ assessment.user.name if assessment.user else 'N/A' }}</td>
+                                    <td class="text-center">
+                                        <span
+                                            class="fw-bold {{ 'text-success' if assessment.credit_score >= 700 else 'text-warning' if assessment.credit_score >= 550 else 'text-danger' }}">
+                                            {{ assessment.credit_score }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span
+                                            class="badge bg-{{ 'success' if assessment.risk_category == 'Low Risk' else 'warning' if assessment.risk_category == 'Medium Risk' else 'danger' }}">
+                                            {{ assessment.risk_category }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span
+                                            class="badge bg-{{ 'success' if assessment.status == 'approved' else 'danger' if assessment.status == 'rejected' else 'primary' if assessment.status == 'pending_review' else 'info' }}">
+                                            {{ assessment.status.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>{{ assessment.assessment_date.strftime('%d %b %Y') if assessment.assessment_date
+                                        else 'N/A' }}</td>
+                                    <td class="text-center">
+                                        <a href="{{ url_for('bank_assessment_result', id=assessment.id) }}"
+                                            class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="chart-empty-state py-5">
+                        <i class="bi bi-inbox"></i>
+                        <p class="mb-0">No recent assessments found</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+    // ════════════════════════════════════════════════════════════════════════════
+    // Analytics Data from Backend
+    // ════════════════════════════════════════════════════════════════════════════
+
+    const analyticsData = {
+        kpis: {{ analytics.kpis | tojson | safe }},
+    risk_distribution: { { analytics.risk_distribution | tojson | safe } },
+    weekly_trends: { { analytics.weekly_trends | tojson | safe } },
+    score_distribution: { { analytics.score_distribution | tojson | safe } },
+    approval_by_risk: { { analytics.approval_by_risk | tojson | safe } },
+    behavioral_metrics: { { analytics.behavioral_metrics | tojson | safe } },
+    branch_performance: { { analytics.branch_performance | tojson | safe } },
+    date_range: { { analytics.date_range | tojson | safe } }
+    };
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Dark Mode Detection & Colors
+    // ════════════════════════════════════════════════════════════════════════════
+
+    const isDarkMode = document.body.classList.contains('dark-mode');
+
+    const chartColors = {
+        primary: '#4f46e5',
+        success: '#10b981',
+        warning: '#f59e0b',
+        danger: '#ef4444',
+        info: '#06b6d4',
+        text: isDarkMode ? '#f1f5f9' : '#1e293b',
+        grid: isDarkMode ? '#334155' : '#e2e8f0',
+        background: isDarkMode ? '#1e293b' : '#ffffff'
+    };
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Date Range Picker
+    // ════════════════════════════════════════════════════════════════════════════
+
+    flatpickr("#dateRangePicker", {
+        mode: "range",
+        dateFormat: "Y-m-d",
+        defaultDate: [analyticsData.date_range.start, analyticsData.date_range.end],
+        maxDate: "today",
+        onChange: function (selectedDates) {
+            if (selectedDates.length === 2) {
+                const start = selectedDates[0].toISOString().split('T')[0];
+                const end = selectedDates[1].toISOString().split('T')[0];
+                window.location.href = `{{ url_for('bank_analytics') }}?start_date=${start}&end_date=${end}`;
+            }
+        }
+    });
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Export Function
+    // ════════════════════════════════════════════════════════════════════════════
+
+    function exportData(format) {
+        const params = new URLSearchParams(window.location.search);
+        params.set('format', format);
+        window.location.href = `{{ url_for('export_analytics') }}?${params.toString()}`;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Chart Initialization
+    // ════════════════════════════════════════════════════════════════════════════
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // 1. Risk Distribution Donut Chart
+        const riskCtx = document.getElementById('riskDonutChart');
+        if (riskCtx && analyticsData.risk_distribution.length > 0) {
+            new Chart(riskCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: analyticsData.risk_distribution.map(r => r.category),
+                    datasets: [{
+                        data: analyticsData.risk_distribution.map(r => r.count),
+                        backgroundColor: [chartColors.success, chartColors.warning, chartColors.danger],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: chartColors.text,
+                                padding: 15,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. Weekly Trends Line Chart
+        const trendCtx = document.getElementById('trendLineChart');
+        if (trendCtx && analyticsData.weekly_trends.length > 0) {
+            new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: analyticsData.weekly_trends.map(w => w.label),
+                    datasets: [{
+                        label: 'Assessments',
+                        data: analyticsData.weekly_trends.map(w => w.count),
+                        borderColor: chartColors.primary,
+                        backgroundColor: chartColors.primary + '20',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: chartColors.primary,
+                        pointBorderColor: chartColors.background,
+                        pointBorderWidth: 2,
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: chartColors.text },
+                            grid: { color: chartColors.grid }
+                        },
+                        x: {
+                            ticks: { color: chartColors.text },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 3. Score Distribution Histogram
+        const histCtx = document.getElementById('scoreHistogram');
+        if (histCtx && analyticsData.score_distribution.length > 0) {
+            const colors = analyticsData.score_distribution.map(s => {
+                const minScore = parseInt(s.range.split('-')[0]);
+                if (minScore >= 700) return chartColors.success;
+                if (minScore >= 550) return chartColors.warning;
+                return chartColors.danger;
+            });
+
+            new Chart(histCtx, {
+                type: 'bar',
+                data: {
+                    labels: analyticsData.score_distribution.map(s => s.range),
+                    datasets: [{
+                        label: 'Applicants',
+                        data: analyticsData.score_distribution.map(s => s.count),
+                        backgroundColor: colors,
+                        borderRadius: 6,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: chartColors.text },
+                            grid: { color: chartColors.grid }
+                        },
+                        x: {
+                            ticks: {
+                                color: chartColors.text,
+                                maxRotation: 45,
+                                minRotation: 45
+                            },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 4. Approval Rate by Risk Chart
+        const approvalCtx = document.getElementById('approvalByRiskChart');
+        if (approvalCtx && analyticsData.approval_by_risk.length > 0) {
+            new Chart(approvalCtx, {
+                type: 'bar',
+                data: {
+                    labels: analyticsData.approval_by_risk.map(r => r.category),
+                    datasets: [
+                        {
+                            label: 'Approved',
+                            data: analyticsData.approval_by_risk.map(r => r.approved),
+                            backgroundColor: chartColors.success,
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Rejected',
+                            data: analyticsData.approval_by_risk.map(r => r.rejected),
+                            backgroundColor: chartColors.danger,
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: chartColors.text,
+                                usePointStyle: true
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            stacked: false,
+                            ticks: { color: chartColors.text },
+                            grid: { color: chartColors.grid }
+                        },
+                        x: {
+                            stacked: false,
+                            ticks: { color: chartColors.text },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 5. Behavioral Metrics Radar Chart
+        const radarCtx = document.getElementById('behavioralRadar');
+        if (radarCtx && analyticsData.behavioral_metrics) {
+            const metrics = analyticsData.behavioral_metrics;
+            new Chart(radarCtx, {
+                type: 'radar',
+                data: {
+                    labels: [
+                        'Income Stability',
+                        'Expense Control',
+                        'Payment Consistency',
+                        'Digital Activity',
+                        'Savings Discipline',
+                        'Cashflow Health'
+                    ],
+                    datasets: [{
+                        label: 'Average Score (%)',
+                        data: [
+                            metrics.income_stability || 0,
+                            metrics.expense_control || 0,
+                            metrics.payment_consistency || 0,
+                            metrics.digital_activity || 0,
+                            metrics.savings_discipline || 0,
+                            metrics.cashflow_health || 0
+                        ],
+                        backgroundColor: chartColors.primary + '40',
+                        borderColor: chartColors.primary,
+                        borderWidth: 2,
+                        pointBackgroundColor: chartColors.primary,
+                        pointBorderColor: chartColors.background,
+                        pointBorderWidth: 2,
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20,
+                                color: chartColors.text,
+                                backdropColor: 'transparent'
+                            },
+                            grid: { color: chartColors.grid },
+                            angleLines: { color: chartColors.grid },
+                            pointLabels: {
+                                color: chartColors.text,
+                                font: { size: 11, weight: 500 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 6. Branch Performance Chart (if exists)
+        const branchCtx = document.getElementById('branchPerformanceChart');
+        if (branchCtx && analyticsData.branch_performance && analyticsData.branch_performance.length > 0) {
+            new Chart(branchCtx, {
+                type: 'bar',
+                data: {
+                    labels: analyticsData.branch_performance.map(b => b.name),
+                    datasets: [
+                        {
+                            label: 'Assessments',
+                            data: analyticsData.branch_performance.map(b => b.assessments),
+                            backgroundColor: chartColors.primary,
+                            borderRadius: 6,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Approval Rate (%)',
+                            data: analyticsData.branch_performance.map(b => b.approval_rate),
+                            type: 'line',
+                            borderColor: chartColors.success,
+                            backgroundColor: 'transparent',
+                            tension: 0.4,
+                            pointRadius: 5,
+                            pointBackgroundColor: chartColors.success,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: chartColors.text,
+                                usePointStyle: true
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            beginAtZero: true,
+                            ticks: { color: chartColors.text },
+                            grid: { color: chartColors.grid }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { color: chartColors.text },
+                            grid: { display: false }
+                        },
+                        x: {
+                            ticks: { color: chartColors.text },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+    });
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Table Filtering
+    // ════════════════════════════════════════════════════════════════════════════
+
+    document.getElementById('statusFilter').addEventListener('change', filterTable);
+    document.getElementById('riskFilter').addEventListener('change', filterTable);
+
+    function filterTable() {
+        const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+        const riskFilter = document.getElementById('riskFilter').value;
+        const rows = document.querySelectorAll('#recentAssessmentsTable tbody tr');
+
+        rows.forEach(row => {
+            const status = row.dataset.status.toLowerCase();
+            const risk = row.dataset.risk;
+
+            const statusMatch = !statusFilter || status === statusFilter;
+            const riskMatch = !riskFilter || risk === riskFilter;
+
+            row.style.display = (statusMatch && riskMatch) ? '' : 'none';
+        });
+    }
+</script>
+{% endblock %}
