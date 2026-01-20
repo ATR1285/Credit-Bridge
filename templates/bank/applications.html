@@ -2,7 +2,8 @@
 
 {% block title %}Applications - Bank Portal{% endblock %}
 
-{% block page_title %}Applications{% endblock %}
+{% block page_title %}{% if session.employee_role == 'credit_manager' %}Pending Approvals{% else %}Applications{% endif
+%}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -11,10 +12,22 @@
         <div class="col-12">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div>
-                    <h2 class="fw-bold mb-1">Applications</h2>
-                    <p class="text-muted mb-0">All processed credit assessments</p>
+                    <h2 class="fw-bold mb-1">
+                        {% if session.employee_role == 'credit_manager' %}
+                        <i class="bi bi-check2-square me-2"></i>Loan Approvals
+                        {% else %}
+                        Applications
+                        {% endif %}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        {% if session.employee_role == 'credit_manager' %}
+                        Review and approve/reject pending loan applications
+                        {% else %}
+                        All processed credit assessments
+                        {% endif %}
+                    </p>
                 </div>
-                {% if session.employee_role in ['loan_officer', 'credit_manager', 'branch_manager', 'head_of_bank'] %}
+                {% if session.employee_role in ['loan_officer', 'branch_manager', 'head_of_bank'] %}
                 <a href="{{ url_for('bank_assessment_new') }}" class="btn btn-primary">
                     <i class="bi bi-plus-circle"></i> New Assessment
                 </a>
@@ -22,6 +35,39 @@
             </div>
         </div>
     </div>
+
+    <!-- Status Tabs for Credit Manager -->
+    {% if session.employee_role == 'credit_manager' and status_counts %}
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link {% if status_filter == 'pending_approval' %}active{% endif %}"
+                href="{{ url_for('bank_applications', status='pending_approval') }}">
+                <i class="bi bi-hourglass-split me-1"></i>Pending
+                <span class="badge bg-warning text-dark ms-1">{{ status_counts.pending_approval }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if status_filter == 'approved' %}active{% endif %}"
+                href="{{ url_for('bank_applications', status='approved') }}">
+                <i class="bi bi-check-circle me-1"></i>Approved
+                <span class="badge bg-success ms-1">{{ status_counts.approved }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if status_filter == 'rejected' %}active{% endif %}"
+                href="{{ url_for('bank_applications', status='rejected') }}">
+                <i class="bi bi-x-circle me-1"></i>Rejected
+                <span class="badge bg-danger ms-1">{{ status_counts.rejected }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if not status_filter %}active{% endif %}" href="{{ url_for('bank_applications') }}">
+                <i class="bi bi-list-ul me-1"></i>All
+                <span class="badge bg-secondary ms-1">{{ status_counts.all }}</span>
+            </a>
+        </li>
+    </ul>
+    {% endif %}
 
     <!-- Applications Table -->
     <div class="card">
@@ -33,11 +79,15 @@
                         <tr>
                             <th>ID</th>
                             <th>Applicant</th>
-                            <th>Contact</th>
                             <th>Score</th>
                             <th>Risk</th>
                             <th>Repayment Prob.</th>
-                            <th>Processed By</th>
+                            <th>Status</th>
+                            {% if session.employee_role == 'credit_manager' %}
+                            <th>Analyzed By</th>
+                            {% else %}
+                            <th>Created By</th>
+                            {% endif %}
                             <th>Date</th>
                             <th>Actions</th>
                         </tr>
@@ -55,12 +105,6 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <div>+91 {{ assessment.user.phone }}</div>
-                                {% if assessment.user.email %}
-                                <small class="text-muted">{{ assessment.user.email }}</small>
-                                {% endif %}
-                            </td>
-                            <td>
                                 <span
                                     class="fw-bold fs-5 {% if assessment.credit_score >= 750 %}text-success{% elif assessment.credit_score >= 600 %}text-warning{% else %}text-danger{% endif %}">
                                     {{ assessment.credit_score }}
@@ -74,8 +118,35 @@
                             </td>
                             <td>{{ (assessment.repayment_probability * 100) | round(1) }}%</td>
                             <td>
-                                <small>{{ assessment.processor.full_name if assessment.processor else 'System'
-                                    }}</small>
+                                {% if assessment.status == 'approved' %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>
+                                {% elif assessment.status == 'rejected' %}
+                                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Rejected</span>
+                                {% elif assessment.status == 'pending_approval' %}
+                                <span class="badge bg-warning text-dark"><i
+                                        class="bi bi-hourglass-split me-1"></i>Pending Approval</span>
+                                {% elif assessment.status == 'under_review' %}
+                                <span class="badge bg-info"><i class="bi bi-search me-1"></i>Under Review</span>
+                                {% elif assessment.status == 'pending_review' %}
+                                <span class="badge bg-secondary"><i class="bi bi-clock me-1"></i>Pending Review</span>
+                                {% elif assessment.status == 'draft' %}
+                                <span class="badge bg-light text-dark"><i
+                                        class="bi bi-file-earmark me-1"></i>Draft</span>
+                                {% elif assessment.status == 'escalated' %}
+                                <span class="badge bg-purple text-white"><i
+                                        class="bi bi-exclamation-triangle me-1"></i>Escalated</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ assessment.status | replace('_', ' ') | title
+                                    }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if session.employee_role == 'credit_manager' %}
+                                <small>{{ assessment.reviewer.full_name if assessment.reviewer else
+                                    (assessment.assignee.full_name if assessment.assignee else '-') }}</small>
+                                {% else %}
+                                <small>{{ assessment.creator.full_name if assessment.creator else 'System' }}</small>
+                                {% endif %}
                             </td>
                             <td>
                                 <small>{{ assessment.assessment_date.strftime('%d %b %Y') }}</small>
@@ -86,10 +157,25 @@
                                         class="btn btn-outline-primary" data-bs-toggle="tooltip" title="View Details">
                                         <i class="bi bi-eye"></i>
                                     </a>
+
+                                    {% if session.employee_role == 'credit_manager' and assessment.status ==
+                                    'pending_approval' %}
+                                    <!-- Quick Approve Button -->
+                                    <button type="button" class="btn btn-success" data-bs-toggle="modal"
+                                        data-bs-target="#approveModal{{ assessment.id }}" title="Approve">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                    <!-- Quick Reject Button -->
+                                    <button type="button" class="btn btn-danger" data-bs-toggle="modal"
+                                        data-bs-target="#rejectModal{{ assessment.id }}" title="Reject">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                    {% else %}
                                     <a href="{{ url_for('bank_download_report', id=assessment.id) }}"
                                         class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Download PDF">
                                         <i class="bi bi-file-pdf"></i>
                                     </a>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -105,7 +191,8 @@
                     <ul class="pagination justify-content-center mb-0">
                         {% if applications.has_prev %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('bank_applications', page=applications.prev_num) }}">
+                            <a class="page-link"
+                                href="{{ url_for('bank_applications', page=applications.prev_num, status=status_filter) }}">
                                 <i class="bi bi-chevron-left"></i>
                             </a>
                         </li>
@@ -115,8 +202,9 @@
                         right_current=2) %}
                         {% if page_num %}
                         <li class="page-item {% if page_num == applications.page %}active{% endif %}">
-                            <a class="page-link" href="{{ url_for('bank_applications', page=page_num) }}">{{ page_num
-                                }}</a>
+                            <a class="page-link"
+                                href="{{ url_for('bank_applications', page=page_num, status=status_filter) }}">{{
+                                page_num }}</a>
                         </li>
                         {% else %}
                         <li class="page-item disabled"><span class="page-link">…</span></li>
@@ -125,7 +213,8 @@
 
                         {% if applications.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('bank_applications', page=applications.next_num) }}">
+                            <a class="page-link"
+                                href="{{ url_for('bank_applications', page=applications.next_num, status=status_filter) }}">
                                 <i class="bi bi-chevron-right"></i>
                             </a>
                         </li>
@@ -137,9 +226,26 @@
             {% else %}
             <div class="empty-state py-5">
                 <i class="bi bi-inbox"></i>
-                <h5>No Applications Yet</h5>
-                <p class="mb-3">Start processing customer assessments to see them here</p>
-                {% if session.employee_role in ['loan_officer', 'credit_manager', 'branch_manager', 'head_of_bank'] %}
+                <h5>
+                    {% if status_filter == 'pending_approval' %}
+                    No Pending Approvals
+                    {% elif status_filter == 'approved' %}
+                    No Approved Applications
+                    {% elif status_filter == 'rejected' %}
+                    No Rejected Applications
+                    {% else %}
+                    No Applications Yet
+                    {% endif %}
+                </h5>
+                <p class="mb-3">
+                    {% if status_filter == 'pending_approval' %}
+                    All applications have been processed
+                    {% else %}
+                    Start processing customer assessments to see them here
+                    {% endif %}
+                </p>
+                {% if session.employee_role in ['loan_officer', 'branch_manager', 'head_of_bank'] and not status_filter
+                %}
                 <a href="{{ url_for('bank_assessment_new') }}" class="btn btn-primary">
                     <i class="bi bi-plus-circle"></i> Create First Assessment
                 </a>
@@ -149,4 +255,90 @@
         </div>
     </div>
 </div>
+
+<!-- Approve/Reject Modals for Credit Manager -->
+{% if session.employee_role == 'credit_manager' %}
+{% for assessment in applications.items %}
+{% if assessment.status == 'pending_approval' %}
+<!-- Approve Modal for Assessment {{ assessment.id }} -->
+<div class="modal fade" id="approveModal{{ assessment.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('bank_assessment_approve', id=assessment.id) }}" method="POST">
+                <div class="modal-header border-0 bg-success bg-opacity-10">
+                    <h5 class="modal-title text-success">
+                        <i class="bi bi-check-circle-fill me-2"></i>Approve Application #{{ assessment.id }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <h4 class="fw-bold">{{ assessment.user.name }}</h4>
+                        <div class="d-flex justify-content-center gap-4 mt-2">
+                            <div>
+                                <span class="fs-3 fw-bold text-primary">{{ assessment.credit_score }}</span>
+                                <div class="text-muted small">Score</div>
+                            </div>
+                            <div>
+                                <span class="fs-5 fw-bold">{{ (assessment.repayment_probability * 100) | round(0)
+                                    }}%</span>
+                                <div class="text-muted small">Repayment</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Approval Notes (Optional)</label>
+                        <textarea name="notes" class="form-control" rows="2"
+                            placeholder="Add any conditions or notes..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle me-1"></i>Approve Loan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal for Assessment {{ assessment.id }} -->
+<div class="modal fade" id="rejectModal{{ assessment.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('bank_assessment_reject', id=assessment.id) }}" method="POST">
+                <div class="modal-header border-0 bg-danger bg-opacity-10">
+                    <h5 class="modal-title text-danger">
+                        <i class="bi bi-x-circle-fill me-2"></i>Reject Application #{{ assessment.id }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <h4 class="fw-bold">{{ assessment.user.name }}</h4>
+                        <span
+                            class="badge bg-{{ 'success' if assessment.credit_score >= 700 else 'warning' if assessment.credit_score >= 550 else 'danger' }}">
+                            Score: {{ assessment.credit_score }}
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rejection Reason <span class="text-danger">*</span></label>
+                        <textarea name="reason" class="form-control" rows="3" required
+                            placeholder="Please explain why this application is being rejected..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-circle me-1"></i>Reject Application
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+{% endif %}
 {% endblock %}

@@ -1,0 +1,131 @@
+{% extends "bank_base.html" %}
+
+{% block title %}Login History - CreditBridge{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>🔐 Login History</h2>
+        <div>
+            {% if failed_count_24h > 0 %}
+            <span class="badge bg-warning text-dark fs-6">
+                ⚠️ {{ failed_count_24h }} failed attempts in last 24h
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Employee</label>
+                    <select name="employee_id" class="form-select">
+                        <option value="">All Employees</option>
+                        {% for emp in employees %}
+                        <option value="{{ emp.id }}" {{ 'selected' if request.args.get('employee_id')|int==emp.id }}>
+                            {{ emp.full_name }} ({{ emp.role }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select name="success" class="form-select">
+                        <option value="">All</option>
+                        <option value="true" {{ 'selected' if request.args.get('success')=='true' }}>Success</option>
+                        <option value="false" {{ 'selected' if request.args.get('success')=='false' }}>Failed</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- History Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Employee</th>
+                            <th>Status</th>
+                            <th>Reason</th>
+                            <th>IP Address</th>
+                            <th>Device</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in history.items %}
+                        <tr class="{{ 'table-danger' if not entry.success else '' }}">
+                            <td>{{ entry.login_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td>
+                                <strong>{{ entry.employee.full_name }}</strong>
+                                <br><small class="text-muted">{{ entry.employee.role }}</small>
+                            </td>
+                            <td>
+                                {% if entry.success %}
+                                <span class="badge bg-success">Success</span>
+                                {% else %}
+                                <span class="badge bg-danger">Failed</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ entry.failure_reason or '-' }}</td>
+                            <td><code>{{ entry.ip_address or 'Unknown' }}</code></td>
+                            <td>
+                                <small class="text-muted"
+                                    style="max-width: 200px; display: block; overflow: hidden; text-overflow: ellipsis;">
+                                    {{ entry.user_agent[:100] if entry.user_agent else 'Unknown' }}
+                                </small>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">No login history found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if history.pages > 1 %}
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if history.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ history.prev_num }}&employee_id={{ request.args.get('employee_id', '') }}&success={{ request.args.get('success', '') }}">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    {% for p in history.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                    <li class="page-item {{ 'active' if p == history.page else '' }}">
+                        <a class="page-link"
+                            href="?page={{ p }}&employee_id={{ request.args.get('employee_id', '') }}&success={{ request.args.get('success', '') }}">{{
+                            p }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if history.has_next %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ history.next_num }}&employee_id={{ request.args.get('employee_id', '') }}&success={{ request.args.get('success', '') }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

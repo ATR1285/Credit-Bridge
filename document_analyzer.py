@@ -30,8 +30,8 @@ class DocumentAnalyzer:
         if gemini_api_key:
             try:
                 genai.configure(api_key=gemini_api_key)
-                # Use gemini-1.5-flash for both text and vision
-                self.gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+                # Use gemini-2.0-flash-exp for both text and vision
+                self.gemini_model = genai.GenerativeModel('gemini-2.0-flash-exp')
                 self.gemini_available = True
                 print("Gemini AI initialized successfully")
             except Exception as e:

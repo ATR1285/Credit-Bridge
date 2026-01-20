@@ -1,0 +1,101 @@
+{% extends "bank_base.html" %}
+
+{% block title %}Two-Factor Authentication Setup - CreditBridge{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px; margin-top: 40px;">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">🔐 Two-Factor Authentication</h4>
+        </div>
+        <div class="card-body p-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
+                role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            {% if employee.mfa_enabled %}
+            <!-- MFA is enabled -->
+            <div class="text-center mb-4">
+                <span class="badge bg-success fs-5 p-3">
+                    ✓ Two-Factor Authentication Enabled
+                </span>
+            </div>
+
+            <div class="alert alert-info">
+                <strong>Your account is protected</strong> with two-factor authentication.
+                Each time you login, you'll need to enter a code from your authenticator app.
+            </div>
+
+            <hr>
+
+            <h5>Disable Two-Factor Authentication</h5>
+            <p class="text-muted">Enter your password to disable MFA. This will make your account less secure.</p>
+
+            <form method="POST" action="{{ url_for('bank_mfa_setup') }}">
+                <input type="hidden" name="action" value="disable">
+                <div class="mb-3">
+                    <label class="form-label">Current Password</label>
+                    <input type="password" class="form-control" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-danger">
+                    Disable Two-Factor Authentication
+                </button>
+            </form>
+
+            {% else %}
+            <!-- MFA not enabled - show setup -->
+            <h5 class="mb-3">Set Up Two-Factor Authentication</h5>
+
+            <div class="row">
+                <div class="col-md-6 text-center mb-3">
+                    <p class="text-muted">Scan this QR code with your authenticator app:</p>
+                    <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code" class="img-fluid border rounded"
+                        style="max-width: 200px;">
+                </div>
+                <div class="col-md-6">
+                    <p class="text-muted">Or enter this secret key manually:</p>
+                    <div class="bg-light p-3 rounded mb-3">
+                        <code class="user-select-all" style="font-size: 1.1em; word-break: break-all;">
+                                {{ secret }}
+                            </code>
+                    </div>
+
+                    <div class="alert alert-warning small">
+                        <strong>Important:</strong> Save this secret key in a safe place.
+                        You'll need it if you lose access to your authenticator app.
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <form method="POST" action="{{ url_for('bank_mfa_setup') }}">
+                <input type="hidden" name="action" value="enable">
+                <div class="mb-3">
+                    <label class="form-label">Enter the 6-digit code from your app to verify:</label>
+                    <input type="text" class="form-control" name="token" placeholder="000000" maxlength="6"
+                        pattern="[0-9]{6}" inputmode="numeric" required style="max-width: 200px;">
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    Enable Two-Factor Authentication
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="text-center mt-3">
+        <a href="{{ url_for('bank_dashboard') }}" class="text-muted">
+            ← Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

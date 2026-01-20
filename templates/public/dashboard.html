@@ -10,39 +10,82 @@
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div>
                     <h2 class="fw-bold mb-1">Welcome back, {{ customer.full_name.split()[0] }}!</h2>
-                    <p class="text-muted mb-0">Here's your credit assessment overview</p>
+                    <p class="text-muted mb-0">Your personal financial health dashboard</p>
                 </div>
                 <a href="{{ url_for('public_assessment') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> New Assessment
+                    <i class="bi bi-plus-circle me-1"></i>New Assessment
                 </a>
             </div>
         </div>
     </div>
 
-    <!-- Stats Cards -->
+    <!-- Credit Score & Financial Health Row -->
     <div class="row g-4 mb-4">
-        <!-- Credit Score Card -->
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100">
-                <div class="card-body text-center">
+        <!-- Credit Score Card with Gauge -->
+        <div class="col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center py-4">
                     {% if latest_assessment %}
-                    <div class="score-circle mx-auto mb-3">
-                        <span
-                            class="score-value {% if latest_assessment.credit_score >= 750 %}score-high{% elif latest_assessment.credit_score >= 600 %}score-medium{% else %}score-low{% endif %}">
-                            {{ latest_assessment.credit_score }}
-                        </span>
-                        <span class="score-label">Credit Score</span>
+                    <!-- Circular Score Gauge -->
+                    <div class="score-gauge mx-auto mb-3" style="width: 180px; height: 180px; position: relative;">
+                        <svg viewBox="0 0 100 100" style="transform: rotate(-90deg);">
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="#e5e7eb" stroke-width="8" />
+                            {% set score = latest_assessment.credit_score %}
+                            {% set percent = ((score - 300) / 600) * 100 %}
+                            {% set dasharray = percent * 2.83 %}
+                            <circle cx="50" cy="50" r="45" fill="none"
+                                stroke="{% if score >= 750 %}#10b981{% elif score >= 650 %}#22c55e{% elif score >= 550 %}#f59e0b{% else %}#ef4444{% endif %}"
+                                stroke-width="8" stroke-dasharray="{{ dasharray }}, 283" stroke-linecap="round" />
+                        </svg>
+                        <div
+                            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                            <div class="fw-bold" style="font-size: 2.5rem; line-height: 1;">{{ score }}</div>
+                            <div class="text-muted small">out of 900</div>
+                        </div>
                     </div>
-                    <span
-                        class="badge-risk {% if 'Low' in latest_assessment.risk_category %}badge-low{% elif 'Medium' in latest_assessment.risk_category %}badge-medium{% else %}badge-high{% endif %}">
-                        {{ latest_assessment.risk_category }}
-                    </span>
+
+                    <!-- Score Range Label -->
+                    <div class="mb-3">
+                        {% if score >= 750 %}
+                        <span class="badge bg-success fs-6 px-3 py-2">Excellent</span>
+                        {% elif score >= 650 %}
+                        <span class="badge bg-primary fs-6 px-3 py-2">Good</span>
+                        {% elif score >= 550 %}
+                        <span class="badge bg-warning text-dark fs-6 px-3 py-2">Fair</span>
+                        {% else %}
+                        <span class="badge bg-danger fs-6 px-3 py-2">Needs Improvement</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Risk Category -->
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-shield-check me-1"></i>
+                        {{ latest_assessment.risk_category }} Risk
+                    </p>
+
+                    <!-- Score Explanation -->
+                    <div class="alert alert-light border mt-3 mb-0 text-start small">
+                        {% if score >= 750 %}
+                        <i class="bi bi-star-fill text-success me-1"></i>
+                        Excellent financial health! You qualify for premium loan rates.
+                        {% elif score >= 650 %}
+                        <i class="bi bi-check-circle text-primary me-1"></i>
+                        Good standing. Minor improvements can unlock better rates.
+                        {% elif score >= 550 %}
+                        <i class="bi bi-info-circle text-warning me-1"></i>
+                        Fair score. Focus on reducing debt and increasing savings.
+                        {% else %}
+                        <i class="bi bi-exclamation-triangle text-danger me-1"></i>
+                        Your score needs attention. Follow our AI recommendations below.
+                        {% endif %}
+                    </div>
                     {% else %}
                     <div class="empty-state py-4">
-                        <i class="bi bi-speedometer2 d-block mb-3" style="font-size: 3rem; opacity: 0.3;"></i>
-                        <p class="text-muted mb-3">No assessment yet</p>
-                        <a href="{{ url_for('public_assessment') }}" class="btn btn-primary btn-sm">
-                            Get Your Score
+                        <i class="bi bi-speedometer2 d-block mb-3" style="font-size: 4rem; opacity: 0.3;"></i>
+                        <h5>No Score Yet</h5>
+                        <p class="text-muted mb-3">Complete an assessment to see your credit score</p>
+                        <a href="{{ url_for('public_assessment') }}" class="btn btn-primary">
+                            <i class="bi bi-calculator me-1"></i>Get Your Score
                         </a>
                     </div>
                     {% endif %}
@@ -50,161 +93,343 @@
             </div>
         </div>
 
-        <!-- Documents Card -->
-        <div class="col-md-6 col-lg-4">
-            <div class="card stat-card primary h-100">
+        <!-- Financial Health Summary -->
+        <div class="col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 py-3">
+                    <h5 class="mb-0"><i class="bi bi-wallet2 me-2"></i>Financial Health</h5>
+                </div>
                 <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <p class="stat-label mb-1">Documents Uploaded</p>
-                            <h2 class="stat-value mb-0">{{ document_count }}</h2>
-                            <p class="stat-label mt-2 mb-0">
-                                <i class="bi bi-arrow-up"></i> Verified documents boost your score
-                            </p>
+                    {% if financial_profile %}
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="p-3 rounded bg-success bg-opacity-10">
+                                <div class="text-muted small">Monthly Income</div>
+                                <div class="fw-bold text-success fs-5">₹{{
+                                    "{:,.0f}".format(financial_profile.monthly_income) }}</div>
+                            </div>
                         </div>
-                        <i class="bi bi-file-earmark-check stat-icon"></i>
+                        <div class="col-6">
+                            <div class="p-3 rounded bg-danger bg-opacity-10">
+                                <div class="text-muted small">Monthly Expenses</div>
+                                <div class="fw-bold text-danger fs-5">₹{{
+                                    "{:,.0f}".format(financial_profile.monthly_expenses) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 rounded bg-primary bg-opacity-10">
+                                <div class="text-muted small">Savings</div>
+                                <div class="fw-bold text-primary fs-5">₹{{
+                                    "{:,.0f}".format(financial_profile.savings_amount) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 rounded bg-info bg-opacity-10">
+                                <div class="text-muted small">Expense Ratio</div>
+                                {% set ratio = (financial_profile.monthly_expenses / financial_profile.monthly_income *
+                                100) if financial_profile.monthly_income > 0 else 0 %}
+                                <div class="fw-bold text-info fs-5">{{ ratio | round(0) }}%</div>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Savings Rate Bar -->
+                    <div class="mt-3">
+                        {% set savings_rate = ((financial_profile.monthly_income - financial_profile.monthly_expenses) /
+                        financial_profile.monthly_income * 100) if financial_profile.monthly_income > 0 else 0 %}
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>Savings Rate</span>
+                            <span class="fw-bold">{{ savings_rate | round(0) }}%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-{{ 'success' if savings_rate >= 20 else 'warning' if savings_rate >= 10 else 'danger' }}"
+                                style="width: {{ savings_rate }}%;"></div>
+                        </div>
+                        <small class="text-muted">
+                            {% if savings_rate >= 20 %}Excellent! You save more than recommended.
+                            {% elif savings_rate >= 10 %}Good. Try to increase to 20%+
+                            {% else %}Low savings. Financial experts recommend 10-20%
+                            {% endif %}
+                        </small>
+                    </div>
+                    {% else %}
+                    <div class="empty-state py-4">
+                        <i class="bi bi-wallet2"></i>
+                        <p class="text-muted mb-0">Complete an assessment to see financial data</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Quick Actions Card -->
-        <div class="col-md-12 col-lg-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <i class="bi bi-lightning-charge me-2"></i>Quick Actions
+        <!-- Quick Actions & Documents -->
+        <div class="col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 py-3">
+                    <h5 class="mb-0"><i class="bi bi-lightning-charge me-2"></i>Quick Actions</h5>
                 </div>
                 <div class="card-body">
-                    <div class="d-grid gap-2">
+                    <div class="d-grid gap-2 mb-4">
                         <a href="{{ url_for('public_upload_documents') }}" class="btn btn-outline-primary">
-                            <i class="bi bi-cloud-upload"></i> Upload Documents
+                            <i class="bi bi-cloud-upload me-2"></i>Upload Documents
                         </a>
                         {% if latest_assessment %}
                         <a href="{{ url_for('public_download_report', id=latest_assessment.id) }}"
                             class="btn btn-outline-primary">
-                            <i class="bi bi-file-pdf"></i> Download Report
+                            <i class="bi bi-file-pdf me-2"></i>Download Report
                         </a>
                         {% endif %}
                         <a href="{{ url_for('public_history') }}" class="btn btn-outline-primary">
-                            <i class="bi bi-clock-history"></i> View History
+                            <i class="bi bi-clock-history me-2"></i>View History
                         </a>
                     </div>
+
+                    <!-- Document Status -->
+                    <div class="border-top pt-3">
+                        <h6 class="mb-2"><i class="bi bi-file-earmark-check me-1"></i>Documents ({{ document_count }})
+                        </h6>
+                        {% if documents %}
+                        <div class="small">
+                            {% for doc in documents[:3] %}
+                            <div class="d-flex justify-content-between align-items-center py-1">
+                                <span class="text-truncate" style="max-width: 120px;">{{ doc.document_type }}</span>
+                                <span
+                                    class="badge bg-{{ 'success' if doc.verification_status == 'verified' else 'warning' if doc.verification_status == 'pending' else 'danger' }}">
+                                    {{ doc.verification_status | default('pending') | title }}
+                                </span>
+                            </div>
+                            {% endfor %}
+                            {% if documents | length > 3 %}
+                            <a href="{{ url_for('public_upload_documents') }}" class="small">+{{ documents | length - 3
+                                }} more</a>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted small mb-0">Upload documents to boost your score</p>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row g-4">
-        <!-- Behavioral Metrics Chart -->
+    <!-- Score Breakdown & AI Advisor Row -->
+    <div class="row g-4 mb-4">
+        <!-- Score Breakdown -->
         <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-header">
-                    <i class="bi bi-radar me-2"></i>Behavioral Profile
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 py-3">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Score Breakdown</h5>
                 </div>
                 <div class="card-body">
-                    {% if latest_assessment %}
-                    <div class="chart-container" style="height: 300px;">
-                        <canvas id="radarChart"></canvas>
+                    {% if behavioral_metrics %}
+                    <!-- Income Stability -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>Income Stability</span>
+                            <span class="fw-bold">{{ ((behavioral_metrics.income_stability_index or 0.5) * 100) |
+                                round(0) }}%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-primary"
+                                style="width: {{ (behavioral_metrics.income_stability_index or 0.5) * 100 }}%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Expense Control -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>Expense Control</span>
+                            <span class="fw-bold">{{ ((behavioral_metrics.expense_control_ratio or 0.5) * 100) |
+                                round(0) }}%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-success"
+                                style="width: {{ (behavioral_metrics.expense_control_ratio or 0.5) * 100 }}%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Reliability -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>Payment Reliability</span>
+                            <span class="fw-bold">{{ ((behavioral_metrics.payment_consistency_score or 0.5) * 100) |
+                                round(0) }}%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-info"
+                                style="width: {{ (behavioral_metrics.payment_consistency_score or 0.5) * 100 }}%;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Savings Discipline -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>Savings Discipline</span>
+                            <span class="fw-bold">{{ ((behavioral_metrics.savings_discipline_ratio or 0.5) * 100) |
+                                round(0) }}%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-warning"
+                                style="width: {{ (behavioral_metrics.savings_discipline_ratio or 0.5) * 100 }}%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Digital Activity -->
+                    <div class="mb-0">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>Digital Activity</span>
+                            <span class="fw-bold">{{ ((behavioral_metrics.digital_activity_score or 0.5) * 100) |
+                                round(0) }}%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-secondary"
+                                style="width: {{ (behavioral_metrics.digital_activity_score or 0.5) * 100 }}%;"></div>
+                        </div>
                     </div>
                     {% else %}
-                    <div class="empty-state">
-                        <i class="bi bi-graph-up"></i>
-                        <h5>No Data Available</h5>
-                        <p class="mb-0">Complete an assessment to see your behavioral profile</p>
+                    <div class="empty-state py-4">
+                        <i class="bi bi-bar-chart"></i>
+                        <p class="text-muted mb-0">Complete an assessment to see score breakdown</p>
                     </div>
                     {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Score History Chart -->
+        <!-- AI Financial Advisor -->
         <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-header">
-                    <i class="bi bi-graph-up-arrow me-2"></i>Score History
+            <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #f8fafc, #f1f5f9);">
+                <div class="card-header bg-transparent border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="bi bi-robot me-2"></i>AI Financial Advisor
+                        <span class="badge bg-primary ms-2">Personalized</span>
+                    </h5>
                 </div>
                 <div class="card-body">
-                    {% if score_history %}
-                    <div class="chart-container" style="height: 300px;">
-                        <canvas id="historyChart"></canvas>
+                    {% if ai_suggestions %}
+                    <div class="list-group list-group-flush bg-transparent">
+                        {% for suggestion in ai_suggestions %}
+                        <div class="list-group-item bg-transparent border-0 px-0 py-2">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-lightbulb text-warning mt-1"></i>
+                                <div>
+                                    <p class="mb-1">{{ suggestion.text if suggestion.text else suggestion }}</p>
+                                    {% if suggestion.priority %}
+                                    <span
+                                        class="badge bg-{{ 'danger' if suggestion.priority == 'High' else 'warning' if suggestion.priority == 'Medium' else 'secondary' }} bg-opacity-75">
+                                        {{ suggestion.priority }} Priority
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
-                    {% else %}
-                    <div class="empty-state">
-                        <i class="bi bi-clock-history"></i>
-                        <h5>No History Yet</h5>
-                        <p class="mb-0">Your score history will appear here after assessments</p>
+                    {% elif latest_assessment %}
+                    <!-- Default suggestions based on score -->
+                    <div class="list-group list-group-flush bg-transparent">
+                        {% if latest_assessment.credit_score < 650 %} <div
+                            class="list-group-item bg-transparent border-0 px-0 py-2">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-lightbulb text-warning mt-1"></i>
+                                <div>
+                                    <p class="mb-1">Reduce your monthly expenses by 10-15% to improve savings rate</p>
+                                    <span class="badge bg-danger bg-opacity-75">High Priority</span>
+                                </div>
+                            </div>
                     </div>
                     {% endif %}
+                    <div class="list-group-item bg-transparent border-0 px-0 py-2">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-lightbulb text-warning mt-1"></i>
+                            <div>
+                                <p class="mb-1">Upload verified documents (PAN, Aadhaar, Bank Statement) to strengthen
+                                    your profile</p>
+                                <span class="badge bg-warning bg-opacity-75">Medium Priority</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="list-group-item bg-transparent border-0 px-0 py-2">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-lightbulb text-warning mt-1"></i>
+                            <div>
+                                <p class="mb-1">Maintain consistent income deposits to show stability</p>
+                                <span class="badge bg-secondary bg-opacity-75">Low Priority</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="empty-state py-4">
+                    <i class="bi bi-robot"></i>
+                    <p class="text-muted mb-0">Complete an assessment to get personalized advice</p>
+                </div>
+                {% endif %}
+
+                <!-- AI Disclaimer -->
+                <div class="alert alert-light border-0 mt-3 mb-0 small">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Suggestions are AI-generated based on your financial profile. Always consult a financial advisor for
+                    major decisions.
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Recent Activity -->
-    {% if score_history %}
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <i class="bi bi-activity me-2"></i>Recent Activity
+<!-- Behavioral Profile & Score History Row - Only show when data exists -->
+{% if behavioral_metrics or (score_history and score_history|length > 1) %}
+<div class="row g-4">
+    {% if behavioral_metrics %}
+    <!-- Behavioral Profile Radar -->
+    <div class="col-lg-{% if score_history and score_history|length > 1 %}6{% else %}12{% endif %}">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 py-3">
+                <h5 class="mb-0"><i class="bi bi-radar me-2"></i>Behavioral Profile</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="radarChart"></canvas>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Score</th>
-                                    <th>Risk Category</th>
-                                    <th>Documents</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for entry in score_history %}
-                                <tr>
-                                    <td>{{ entry.created_at.strftime('%d %b %Y') }}</td>
-                                    <td>
-                                        <span
-                                            class="fw-bold {% if entry.score >= 750 %}text-success{% elif entry.score >= 600 %}text-warning{% else %}text-danger{% endif %}">
-                                            {{ entry.score }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span
-                                            class="badge-risk {% if 'Low' in entry.risk_category %}badge-low{% elif 'Medium' in entry.risk_category %}badge-medium{% else %}badge-high{% endif %}">
-                                            {{ entry.risk_category }}
-                                        </span>
-                                    </td>
-                                    <td>{{ entry.document_count }}</td>
-                                    <td>
-                                        <a href="{{ url_for('public_result', id=entry.assessment_id) }}"
-                                            class="btn btn-sm btn-outline-primary">
-                                            View Details
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if score_history and score_history|length > 1 %}
+    <!-- Score History Chart -->
+    <div class="col-lg-{% if latest_assessment and latest_assessment.features_json %}6{% else %}12{% endif %}">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-graph-up-arrow me-2"></i>Score Trend</h5>
+                <a href="{{ url_for('public_history') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="historyChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
     {% endif %}
 </div>
+{% endif %}
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    {% if latest_assessment %}
+    {% if behavioral_metrics %}
     // Radar Chart Data
-    const features = {{ latest_assessment.features_json | safe }};
-    CreditBridge.createRadarChart('radarChart', features);
+    const features = {{ behavioral_metrics | tojson | safe }};
+    if (features && Object.keys(features).length > 0) {
+        CreditBridge.createRadarChart('radarChart', features);
+    }
     {% endif %}
 
-    {% if score_history %}
+    {% if score_history and score_history | length > 1 %}
     // Score History Data
     const historyData = [
         {% for entry in score_history | reverse %}

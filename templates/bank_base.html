@@ -459,10 +459,16 @@
             {# ROLE-BASED NAVIGATION - Show only what each role can access #}
             {# ============================================================ #}
 
-            {# --- HEAD OF BANK & BRANCH MANAGER --- #}
-            {% if session.employee_role.lower() in ['head_of_bank', 'branch_manager'] %}
+            {# --- HEAD OF BANK & BRANCH MANAGER (have ALL permission) --- #}
+            {% if session.employee_role in ['head_of_bank', 'branch_manager'] %}
 
-            {# Note: New Assessment removed - only Loan Officers can create #}
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'bank_assessment_new' %}active{% endif %}"
+                    href="{{ url_for('bank_assessment_new') }}">
+                    <i class="bi bi-plus-circle"></i>
+                    New Assessment
+                </a>
+            </li>
 
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'bank_applications' %}active{% endif %}"
@@ -517,19 +523,17 @@
             {% endif %}
 
             {# --- CREDIT MANAGER --- #}
-            {% if session.employee_role.lower() == 'credit_manager' %}
+            {% if session.employee_role == 'credit_manager' %}
 
-            {# Note: New Assessment removed - only Loan Officers can create #}
+            <li class="nav-divider"><span>Approvals</span></li>
 
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'bank_applications' %}active{% endif %}"
-                    href="{{ url_for('bank_applications') }}">
-                    <i class="bi bi-list-task"></i>
-                    Applications
+                    href="{{ url_for('bank_applications') }}?status=pending_approval">
+                    <i class="bi bi-check2-square"></i>
+                    Pending Approvals
                 </a>
             </li>
-
-            <li class="nav-divider"><span>Team Review</span></li>
 
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'bank_escalations' %}active{% endif %}"
@@ -542,7 +546,7 @@
             {% endif %}
 
             {# --- LOAN OFFICER --- #}
-            {% if session.employee_role.lower() == 'loan_officer' %}
+            {% if session.employee_role == 'loan_officer' %}
 
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'bank_assessment_new' %}active{% endif %}"
@@ -565,7 +569,7 @@
             {% endif %}
 
             {# --- CREDIT ANALYST --- #}
-            {% if session.employee_role.lower() == 'credit_analyst' %}
+            {% if session.employee_role == 'credit_analyst' %}
 
             <li class="nav-divider"><span>My Work</span></li>
 
