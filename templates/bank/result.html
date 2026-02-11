@@ -199,12 +199,6 @@
                                 <i class="bi bi-arrow-up-circle me-1"></i>Escalate to Manager
                             </button>
                             {% endif %}
-
-                            {# Download PDF #}
-                            <a href="{{ url_for('bank_download_report', id=assessment.id) }}"
-                                class="btn btn-outline-primary">
-                                <i class="bi bi-file-pdf me-1"></i>Download PDF
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -259,7 +253,7 @@
                     {% if assessment.approver %}
                     <div class="d-flex align-items-center gap-2">
                         <small class="text-muted">Decided by:</small>
-                        <span class="badge bg-secondary-subtle text-dark">{{ assessment.approver.full_name }}</span>
+                        <span class="badge bg-secondary-subtle text-body">{{ assessment.approver.full_name }}</span>
                         {% if assessment.approved_at %}
                         <small class="text-muted ms-auto">{{ assessment.approved_at.strftime('%d %b %Y') }}</small>
                         {% endif %}
@@ -535,9 +529,27 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0 py-3">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fw-semibold"><i class="bi bi-bank text-primary me-2"></i>Bank Statement Analysis
                     </h6>
+                    {% if analysis %}
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="text-end">
+                            <span class="small text-muted">Data Confidence</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress" style="width: 80px; height: 6px;">
+                                    <div class="progress-bar bg-{{ 'success' if analysis.confidence >= 0.7 else 'warning' if analysis.confidence >= 0.5 else 'danger' }}"
+                                        style="width: {{ analysis.confidence_pct }}%"></div>
+                                </div>
+                                <span class="fw-bold small">{{ analysis.confidence_pct }}%</span>
+                            </div>
+                        </div>
+                        <div class="text-center px-3 py-2 rounded-3 bg-{{ analysis.health_color }}-subtle">
+                            <div class="fs-4 fw-bold text-{{ analysis.health_color }}">{{ analysis.health_score }}</div>
+                            <div class="small text-{{ analysis.health_color }}">{{ analysis.health_label }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     <div class="row g-4">
@@ -547,27 +559,35 @@
                             <div class="row g-2">
                                 <div class="col-6">
                                     <div class="border rounded p-3 text-center bg-primary bg-opacity-10">
-                                        <h4 class="mb-0 fw-bold">{{ features.get('doc_upi_frequency', 0) }}</h4>
-                                        <small class="text-muted">UPI Txns</small>
+                                        <h5 class="mb-0 fw-bold">{{ analysis.formatted.upi if analysis else
+                                            features.get('doc_upi_frequency', 0) }}</h5>
+                                        <small class="text-muted">UPI Activity</small>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="border rounded p-3 text-center bg-info bg-opacity-10">
-                                        <h4 class="mb-0 fw-bold">{{ features.get('doc_transaction_count', 0) }}</h4>
+                                        <h5 class="mb-0 fw-bold">{{ analysis.formatted.transactions if analysis else
+                                            features.get('doc_transaction_count', 0) }}</h5>
                                         <small class="text-muted">Total Txns</small>
                                     </div>
                                 </div>
                                 <div class="col-6">
-                                    <div class="border rounded p-3 text-center bg-warning bg-opacity-10">
-                                        <h4 class="mb-0 fw-bold">{{ features.get('doc_emi_payments', 0) }}</h4>
-                                        <small class="text-muted">EMI Debits</small>
+                                    <div class="border rounded p-3 text-center bg-warning bg-opacity-10"
+                                        data-bs-toggle="tooltip" title="Active EMI/loan payments detected in statement">
+                                        <h5 class="mb-0 fw-bold">{{ analysis.formatted.emi if analysis else
+                                            features.get('doc_emi_payments', 0) }}</h5>
+                                        <small class="text-muted">EMI Burden</small>
                                     </div>
                                 </div>
                                 <div class="col-6">
-                                    <div class="border rounded p-3 text-center bg-success bg-opacity-10">
-                                        <h5 class="mb-0 fw-bold">{{ 'Yes' if features.get('doc_salary_detected') else
-                                            'No' }}</h5>
-                                        <small class="text-muted">Salary Detected</small>
+                                    <div
+                                        class="border rounded p-3 text-center {{ 'bg-success' if features.get('doc_salary_detected') else 'bg-secondary' }} bg-opacity-10">
+                                        <h5
+                                            class="mb-0 fw-bold {{ 'text-success' if features.get('doc_salary_detected') else '' }}">
+                                            {{ analysis.formatted.salary if analysis else ('Yes' if
+                                            features.get('doc_salary_detected') else 'No') }}
+                                        </h5>
+                                        <small class="text-muted">Salary Pattern</small>
                                     </div>
                                 </div>
                             </div>
@@ -585,26 +605,57 @@
                         <div class="col-lg-4">
                             <h6 class="text-muted small text-uppercase mb-3">Financial Health</h6>
                             <ul class="list-group list-group-flush">
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Avg Balance</span>
-                                    <span class="fw-bold">₹{{ "{:,.0f}".format(features.get('doc_avg_balance', 0))
-                                        }}</span>
+                                <li class="list-group-item d-flex justify-content-between" data-bs-toggle="tooltip"
+                                    title="Average monthly balance across statement period">
+                                    <span><i class="bi bi-info-circle text-muted me-1"></i>Avg Balance</span>
+                                    <span class="fw-bold">{{ analysis.formatted.avg_balance if analysis else
+                                        '₹{:,.0f}'.format(features.get('doc_avg_balance', 0)) }}</span>
                                 </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Overdrafts</span>
+                                <li class="list-group-item d-flex justify-content-between" data-bs-toggle="tooltip"
+                                    title="Number of times account went into negative balance">
+                                    <span><i class="bi bi-info-circle text-muted me-1"></i>Overdrafts</span>
                                     <span
-                                        class="badge bg-{{ 'danger' if features.get('doc_overdraft_count', 0) > 0 else 'success' }}">{{
-                                        features.get('doc_overdraft_count', 0) }}</span>
+                                        class="badge bg-{{ 'danger' if features.get('doc_overdraft_count', 0) > 0 else 'success' }}">
+                                        {{ features.get('doc_overdraft_count', 0) or 'None' }}
+                                    </span>
                                 </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Bounces</span>
+                                <li class="list-group-item d-flex justify-content-between" data-bs-toggle="tooltip"
+                                    title="Payment rejections due to insufficient funds">
+                                    <span><i class="bi bi-info-circle text-muted me-1"></i>Bounces</span>
                                     <span
-                                        class="badge bg-{{ 'danger' if features.get('doc_bounce_count', 0) > 0 else 'success' }}">{{
-                                        features.get('doc_bounce_count', 0) }}</span>
+                                        class="badge bg-{{ 'danger' if features.get('doc_bounce_count', 0) > 0 else 'success' }}">
+                                        {{ features.get('doc_bounce_count', 0) or 'None' }}
+                                    </span>
                                 </li>
                             </ul>
                         </div>
                     </div>
+
+                    <!-- Why This Risk? Explanation Box -->
+                    {% if analysis and analysis.risk_reasons %}
+                    <div class="mt-4 p-3 border rounded-3 bg-light">
+                        <h6 class="fw-semibold mb-3"><i class="bi bi-lightbulb text-warning me-2"></i>Why This Risk
+                            Assessment?</h6>
+                        <div class="row">
+                            {% for reason in analysis.risk_reasons %}
+                            <div class="col-md-6 mb-2">
+                                <div class="d-flex align-items-start gap-2">
+                                    {% if reason.type == 'danger' %}
+                                    <i class="bi bi-x-circle-fill text-danger mt-1"></i>
+                                    {% elif reason.type == 'warning' %}
+                                    <i class="bi bi-exclamation-triangle-fill text-warning mt-1"></i>
+                                    {% elif reason.type == 'success' %}
+                                    <i class="bi bi-check-circle-fill text-success mt-1"></i>
+                                    {% else %}
+                                    <i class="bi bi-info-circle-fill text-info mt-1"></i>
+                                    {% endif %}
+                                    <span class="small">{{ reason.text }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

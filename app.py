@@ -20,6 +20,14 @@ from dotenv import load_dotenv
 from ml_model import CreditMLModel, initialize_model
 from document_analyzer import DocumentAnalyzer
 from pdf_generator import CreditReportGenerator
+from permissions import (
+    Permission, 
+    VALID_PERMISSIONS, 
+    validate_permissions as validate_permissions_list,
+    ROLE_PERMISSIONS as PERMISSIONS_REGISTRY,
+    DANGEROUS_PERMISSIONS as REGISTRY_DANGEROUS_PERMS,
+    PermissionError
+)
 
 # Load environment variables
 load_dotenv()
@@ -35,10 +43,53 @@ app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', 10485760)
 app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', 'uploads')
 app.config['REPORTS_FOLDER'] = os.getenv('REPORTS_FOLDER', 'reports')
 
+# Session Security Configuration
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=8)  # Absolute timeout
+app.config['SESSION_REFRESH_EACH_REQUEST'] = True              # Extend on activity
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_ENV') == 'production'  # HTTPS only in prod
+app.config['SESSION_COOKIE_HTTPONLY'] = True                   # No JS access
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'                  # CSRF protection
+
+# Database connection pool settings (PostgreSQL specific optimization)
+if 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']:
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_pre_ping': True,           # Test connections before use
+        'pool_recycle': 60,              # Neon drops idle connections fast - recycle every minute
+        'pool_timeout': 30,              # Wait max 30s for connection
+        'pool_size': 5,                  # Smaller pool for Neon free tier
+        'max_overflow': 5,               # Limited overflow for Neon
+        'connect_args': {
+            'keepalives': 1,             # Enable TCP keepalives
+            'keepalives_idle': 30,       # Start keepalive after 30s idle
+            'keepalives_interval': 10,   # Send keepalive every 10s
+            'keepalives_count': 5,       # Max 5 failed keepalives before drop
+            'connect_timeout': 10,       # Connection timeout
+        }
+    }
+else:
+    # Basic SQLite settings if needed
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {}
+
 # Initialize extensions
 db = SQLAlchemy(app)
 CORS(app)
 oauth = OAuth(app)
+
+# Database migrations
+from flask_migrate import Migrate
+migrate = Migrate(app, db)
+
+# Rate Limiting for security
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri=os.getenv('REDIS_URL', 'memory://'),
+    strategy="fixed-window"
+)
 
 # Google OAuth configuration
 # Only register if credentials are available
@@ -59,6 +110,19 @@ else:
 ml_model = None
 document_analyzer = None
 pdf_generator = None
+
+# ============================================================================
+# ROLE HIERARCHY LEVELS (for privilege escalation prevention)
+# ============================================================================
+ROLE_LEVELS = {
+    "credit_analyst": 1,
+    "loan_officer": 2,
+    "credit_manager": 3,
+    "branch_manager": 4,
+    "head_of_bank": 5
+}
+
+DANGEROUS_PERMISSIONS = {"ALL", "SUPER_ADMIN"}
 
 # Database Models
 
@@ -160,6 +224,17 @@ class Employee(db.Model):
     daily_assessment_count = db.Column(db.Integer, default=0)  # Resets daily
     avg_processing_time_minutes = db.Column(db.Float, default=0.0)
     
+    # ==========================================
+    # SECURITY: Login & Account Protection
+    # ==========================================
+    failed_login_attempts = db.Column(db.Integer, default=0)
+    account_locked_until = db.Column(db.DateTime, nullable=True)
+    last_password_change = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # MFA (Two-Factor Authentication)
+    mfa_enabled = db.Column(db.Boolean, default=False)
+    mfa_secret = db.Column(db.String(32), nullable=True)  # TOTP secret key
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -177,15 +252,34 @@ class Employee(db.Model):
     notifications = db.relationship('Notification', backref='employee', lazy='dynamic')
     
     def has_permission(self, permission):
-        """Check if employee has a specific permission"""
+        """
+        Check if employee has a specific permission.
+        
+        Security: ALL and SUPER_ADMIN only work for head_of_bank/branch_manager.
+        Lower roles cannot use these permissions even if assigned accidentally.
+        """
         perms = json.loads(self.permissions) if self.permissions else []
-        # SUPER_ADMIN bypasses all permission checks
+        
+        # SUPER_ADMIN bypasses all - but ONLY for head_of_bank
         if 'SUPER_ADMIN' in perms:
-            return True
-        return 'ALL' in perms or permission in perms
+            if self.role == 'head_of_bank':
+                return True
+            # Log security warning - SUPER_ADMIN on wrong role
+            # (permission will be ignored)
+        
+        # ALL bypasses - but ONLY for head_of_bank or branch_manager
+        if 'ALL' in perms:
+            if self.role in ('head_of_bank', 'branch_manager'):
+                return True
+            # ALL permission on lower role is ignored for security
+        
+        # Standard permission check
+        return permission in perms
     
     def is_super_admin(self):
-        """Check if employee is a super admin (head_of_bank)"""
+        """Check if employee is a super admin (head_of_bank with SUPER_ADMIN)"""
+        if self.role != 'head_of_bank':
+            return False  # Only head_of_bank can be super admin
         perms = json.loads(self.permissions) if self.permissions else []
         return 'SUPER_ADMIN' in perms
     
@@ -214,11 +308,181 @@ class Employee(db.Model):
             result.append(sub)
             result.extend(sub.get_subordinates_recursive())
         return result
+    
+    # ==========================================
+    # HIERARCHY & PRIVILEGE ESCALATION PREVENTION
+    # ==========================================
+    
+    def role_level(self):
+        """Get numeric role level for hierarchy comparisons"""
+        return ROLE_LEVELS.get(self.role, 0)
+    
+    def can_manage(self, other):
+        """Check if this employee can manage another employee"""
+        if not other:
+            return True
+        return self.role_level() > other.role_level()
+    
+    def validate_manager(self, manager):
+        """
+        Validate that a manager assignment is valid.
+        
+        Args:
+            manager: Employee object to set as manager
+            
+        Raises:
+            ValueError: If manager assignment is invalid
+        """
+        if not manager:
+            return True
+        
+        if not manager.can_manage(self):
+            raise ValueError(f"Manager must have higher role than employee. "
+                           f"{manager.role} cannot manage {self.role}")
+        
+        # Branch check - except head_of_bank can manage across branches
+        if manager.branch_id != self.branch_id and manager.role != "head_of_bank":
+            raise ValueError("Manager must belong to same branch (except Head of Bank)")
+        
+        return True
+    
+    def validate_permissions(self, permissions_list):
+        """
+        Validate that permissions are appropriate for role.
+        
+        Args:
+            permissions_list: List of permission strings
+            
+        Raises:
+            ValueError: If dangerous permissions assigned to non-admin
+        """
+        # Check SUPER_ADMIN - only head_of_bank
+        if 'SUPER_ADMIN' in permissions_list:
+            if self.role != "head_of_bank":
+                raise ValueError(
+                    f"SUPER_ADMIN permission denied for role '{self.role}'. "
+                    "Only head_of_bank can have SUPER_ADMIN."
+                )
+        
+        # Check ALL - only head_of_bank or branch_manager
+        if 'ALL' in permissions_list:
+            if self.role not in ("head_of_bank", "branch_manager"):
+                raise ValueError(
+                    f"ALL permission denied for role '{self.role}'. "
+                    "Only head_of_bank and branch_manager can have ALL."
+                )
+        
+        # Check other dangerous permissions from registry
+        for perm in permissions_list:
+            if perm in DANGEROUS_PERMISSIONS and perm not in ('ALL', 'SUPER_ADMIN'):
+                if self.role != "head_of_bank":
+                    raise ValueError(
+                        f"Dangerous permission '{perm}' denied for role '{self.role}'."
+                    )
+        
+        return True
+    
+    def set_manager_safe(self, manager):
+        """Safely set manager with validation"""
+        self.validate_manager(manager)
+        self.manager_id = manager.id if manager else None
+    
+    def set_permissions_safe(self, permissions_list):
+        """Safely set permissions with validation"""
+        self.validate_permissions(permissions_list)
+        self.permissions = json.dumps(permissions_list)
+    
+    # ==========================================
+    # SECURITY: Account Lockout Methods
+    # ==========================================
+    
+    LOCKOUT_THRESHOLD = 5          # Failed attempts before lockout
+    LOCKOUT_DURATION_MINUTES = 15  # Lockout duration
+    
+    def is_locked(self) -> bool:
+        """Check if account is currently locked."""
+        if self.account_locked_until is None:
+            return False
+        return datetime.utcnow() < self.account_locked_until
+    
+    def get_lockout_remaining(self) -> int:
+        """Get remaining lockout time in seconds."""
+        if not self.is_locked():
+            return 0
+        delta = self.account_locked_until - datetime.utcnow()
+        return max(0, int(delta.total_seconds()))
+    
+    def record_failed_login(self):
+        """Record a failed login attempt and lock if threshold reached."""
+        self.failed_login_attempts += 1
+        
+        if self.failed_login_attempts >= self.LOCKOUT_THRESHOLD:
+            self.account_locked_until = datetime.utcnow() + timedelta(
+                minutes=self.LOCKOUT_DURATION_MINUTES
+            )
+    
+    def record_successful_login(self):
+        """Reset failed attempts on successful login."""
+        self.failed_login_attempts = 0
+        self.account_locked_until = None
+        self.last_login = datetime.utcnow()
+    
+    def verify_mfa(self, token: str) -> bool:
+        """Verify MFA token if enabled."""
+        if not self.mfa_enabled or not self.mfa_secret:
+            return True  # MFA not enabled, pass through
+        
+        try:
+            import pyotp
+            totp = pyotp.TOTP(self.mfa_secret)
+            return totp.verify(token, valid_window=1)  # Allow 30s window
+        except Exception:
+            return False
 
 
 # ============================================================================
 # NEW MODELS FOR ROLE-BASED WORKFLOW
 # ============================================================================
+
+class LoginHistory(db.Model):
+    """Track all login attempts for security monitoring."""
+    __tablename__ = 'login_history'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    
+    ip_address = db.Column(db.String(45))       # IPv6 compatible
+    user_agent = db.Column(db.String(512))
+    login_time = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    success = db.Column(db.Boolean, default=False)
+    failure_reason = db.Column(db.String(100))  # 'invalid_password', 'account_locked', 'mfa_failed'
+    
+    # Device fingerprinting (optional)
+    device_hash = db.Column(db.String(64))      # SHA256 of device info
+    location_country = db.Column(db.String(50)) # From IP geolocation
+    
+    employee = db.relationship('Employee', backref=db.backref('login_history', lazy='dynamic'))
+    
+    @staticmethod
+    def log_attempt(employee_id, success, ip=None, user_agent=None, failure_reason=None):
+        """Log a login attempt."""
+        import hashlib
+        
+        device_hash = None
+        if user_agent:
+            device_hash = hashlib.sha256(user_agent.encode()).hexdigest()[:32]
+        
+        entry = LoginHistory(
+            employee_id=employee_id,
+            ip_address=ip,
+            user_agent=user_agent[:512] if user_agent else None,
+            success=success,
+            failure_reason=failure_reason,
+            device_hash=device_hash
+        )
+        db.session.add(entry)
+        return entry
+
 
 class AuditLog(db.Model):
     """Comprehensive audit trail for all system actions"""
@@ -403,6 +667,27 @@ class CreditAssessment(db.Model):
     # Processing Metrics
     processing_time_minutes = db.Column(db.Integer, nullable=True)  # Time from creation to final decision
     
+    # ==========================================
+    # WORKFLOW: Record Locking & Freezing
+    # ==========================================
+    locked_by = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=True)
+    locked_at = db.Column(db.DateTime, nullable=True)
+    is_frozen = db.Column(db.Boolean, default=False)  # True when approved/rejected
+    
+    # Override Tracking (for managers)
+    override_used = db.Column(db.Boolean, default=False)
+    override_reason = db.Column(db.Text, nullable=True)
+    override_by = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=True)
+    override_at = db.Column(db.DateTime, nullable=True)
+    
+    # ==========================================
+    # ANALYSIS: Enhanced Risk Assessment Fields
+    # ==========================================
+    financial_health_score = db.Column(db.Integer, nullable=True)  # 0-100 score
+    data_confidence = db.Column(db.Float, nullable=True)           # 0.0-1.0
+    risk_reasons_json = db.Column(db.Text, nullable=True)          # JSON array of reasons
+    verification_notes_json = db.Column(db.Text, nullable=True)    # JSON: doc_type -> note
+    
     # Legacy field for backward compatibility
     processed_by = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=True)
     
@@ -411,6 +696,15 @@ class CreditAssessment(db.Model):
     
     def is_editable_by(self, employee):
         """Check if this assessment can be edited by the given employee"""
+        # Frozen assessments cannot be edited (approved/rejected)
+        if self.is_frozen:
+            return False
+        
+        # Check if locked by another user
+        if self.is_locked_by_other(employee):
+            return False
+        
+        # Head of bank / branch manager with ALL can always edit (with override)
         if employee.has_permission('ALL'):
             return True
         
@@ -429,6 +723,59 @@ class CreditAssessment(db.Model):
                    self.status in ['reviewed', 'pending_approval', 'escalated']
         
         return False
+    
+    # ==========================================
+    # LOCKING: Prevent concurrent editing
+    # ==========================================
+    
+    LOCK_TIMEOUT_MINUTES = 15
+    
+    def is_locked_by_other(self, employee):
+        """Check if assessment is locked by another user."""
+        if not self.locked_by:
+            return False
+        if self.locked_by == employee.id:
+            return False  # Locked by self
+        if self.is_lock_expired():
+            return False  # Lock expired
+        return True
+    
+    def is_lock_expired(self):
+        """Check if current lock has expired."""
+        if not self.locked_at:
+            return True
+        elapsed = (datetime.utcnow() - self.locked_at).total_seconds()
+        return elapsed > self.LOCK_TIMEOUT_MINUTES * 60
+    
+    def acquire_lock(self, employee):
+        """Acquire edit lock for an employee."""
+        if self.is_locked_by_other(employee):
+            return False
+        
+        self.locked_by = employee.id
+        self.locked_at = datetime.utcnow()
+        return True
+    
+    def release_lock(self, employee=None):
+        """Release edit lock."""
+        if employee and self.locked_by != employee.id:
+            return False  # Can't release someone else's lock
+        
+        self.locked_by = None
+        self.locked_at = None
+        return True
+    
+    def get_lock_holder_name(self):
+        """Get name of employee holding the lock."""
+        if not self.locked_by:
+            return None
+        holder = Employee.query.get(self.locked_by)
+        return holder.full_name if holder else None
+    
+    def freeze(self):
+        """Freeze assessment after approval/rejection."""
+        self.is_frozen = True
+        self.release_lock()
     
     def can_be_viewed_by(self, employee):
         """Check if this assessment can be viewed by the given employee"""
@@ -511,6 +858,53 @@ class ImprovementPlan(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+class PDFReport(db.Model):
+    """Async PDF generation tracking for background task processing"""
+    __tablename__ = 'pdf_reports'
+    
+    id = db.Column(db.String(36), primary_key=True)  # UUID from Celery task
+    assessment_id = db.Column(db.Integer, db.ForeignKey('credit_assessments.id'), nullable=False)
+    
+    # Status: queued, processing, complete, failed, retrying
+    status = db.Column(db.String(20), nullable=False, default='queued')
+    
+    # File info
+    file_path = db.Column(db.String(512))
+    file_size = db.Column(db.Integer)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    started_at = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)
+    
+    # Error handling
+    error_message = db.Column(db.Text)
+    retry_count = db.Column(db.Integer, default=0)
+    
+    # Relationship
+    assessment = db.relationship('CreditAssessment', backref='pdf_reports')
+    
+    def to_dict(self):
+        """Convert to dictionary for API response"""
+        result = {
+            'id': self.id,
+            'assessment_id': self.assessment_id,
+            'status': self.status,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+        
+        if self.status == 'complete':
+            result['download_url'] = f'/pdf/download/{self.id}'
+            result['completed_at'] = self.completed_at.isoformat() if self.completed_at else None
+            result['file_size'] = self.file_size
+        elif self.status == 'failed':
+            result['error'] = self.error_message
+        elif self.status == 'processing':
+            result['started_at'] = self.started_at.isoformat() if self.started_at else None
+        
+        return result
+
+
 # ============================================================================
 # ROLE-BASED PERMISSIONS CONFIGURATION
 # ============================================================================
@@ -571,7 +965,6 @@ ROLE_PERMISSIONS = {
         'VIEW_BRANCH_CUSTOMERS',
         'VIEW_BRANCH_EMPLOYEES',
         'VIEW_BRANCH_ANALYTICS',
-        'VIEW_BRANCH_AUDIT_LOGS',
         
         # Edit Branch Data
         # 'CREATE_ASSESSMENT',  # REMOVED - Only Loan Officers create assessments
@@ -599,7 +992,6 @@ ROLE_PERMISSIONS = {
         'FINAL_APPROVAL_AUTHORITY',
         
         # Reports
-        'VIEW_AUDIT_LOGS',
         'EXPORT_ALL_REPORTS',
         'EXPORT_BRANCH_REPORTS',
         'VIEW_TEAM_PERFORMANCE',
@@ -614,6 +1006,7 @@ ROLE_PERMISSIONS = {
     ],
     'credit_manager': [
         # View Team Data
+        'VIEW_ALL_ASSESSMENTS',  # Can view all for approval workflow
         'VIEW_TEAM_ASSESSMENTS',
         'VIEW_TEAM_CUSTOMERS',
         'VIEW_TEAM_PERFORMANCE',
@@ -1427,6 +1820,50 @@ def permission_required(*required_permissions, require_all=False):
     return decorator
 
 
+def require_can_manage(target_employee):
+    """
+    Check if current employee can manage the target employee.
+    Used for privilege escalation prevention.
+    
+    Args:
+        target_employee: Employee object to check against
+        
+    Returns:
+        True if allowed, aborts with 403 if not
+    """
+    if 'employee_id' not in session:
+        abort(401)
+    
+    current = Employee.query.get(session['employee_id'])
+    if not current:
+        abort(401)
+    
+    # Head of bank can manage anyone
+    if current.role == 'head_of_bank':
+        return True
+    
+    # Check role hierarchy
+    if not current.can_manage(target_employee):
+        # Log privilege escalation attempt
+        AuditLog.log(
+            employee_id=current.id,
+            action='PRIVILEGE_ESCALATION_ATTEMPT',
+            entity_type='employee',
+            entity_id=target_employee.id if target_employee else None,
+            details={
+                'current_role': current.role,
+                'target_role': target_employee.role if target_employee else None,
+                'action': 'Attempted to modify equal/higher ranked employee'
+            },
+            ip=request.remote_addr,
+            user_agent=request.headers.get('User-Agent', '')[:500]
+        )
+        db.session.commit()
+        abort(403, description="You cannot modify users with equal or higher role")
+    
+    return True
+
+
 def get_current_employee():
     """Get current logged in employee or None"""
     if 'employee_id' not in session:
@@ -1443,6 +1880,168 @@ def forbidden(e):
 @app.errorhandler(404)
 def not_found(e):
     return render_template('404.html'), 404
+
+
+# Health Check Endpoint (for Docker/load balancers)
+@app.route('/health')
+@limiter.exempt
+def health_check():
+    """Health check endpoint for monitoring."""
+    return jsonify({
+        'status': 'healthy',
+        'service': 'creditbridge',
+        'version': '1.0.0'
+    })
+
+
+# ============================================================================
+# SESSION SECURITY: Idle Timeout Middleware
+# ============================================================================
+
+IDLE_TIMEOUT_MINUTES = 30  # Auto-logout after 30 minutes of inactivity
+
+@app.before_request
+def check_session_timeout():
+    """Check for session idle timeout and extend session on activity."""
+    # Skip for static files and public routes
+    if request.endpoint in ('static', 'health_check', 'landing', 'bank_login', 'bank_mfa_verify'):
+        return
+    
+    # Skip if no session
+    if 'employee_id' not in session:
+        return
+    
+    # Check idle timeout
+    last_activity = session.get('last_activity')
+    if last_activity:
+        try:
+            last_dt = datetime.fromisoformat(last_activity)
+            idle_seconds = (datetime.utcnow() - last_dt).total_seconds()
+            
+            if idle_seconds > IDLE_TIMEOUT_MINUTES * 60:
+                # Session timed out
+                employee_id = session.get('employee_id')
+                session.clear()
+                
+                if employee_id:
+                    AuditLog.log(
+                        employee_id=employee_id,
+                        action='SESSION_TIMEOUT',
+                        entity_type='session',
+                        ip=request.remote_addr
+                    )
+                    db.session.commit()
+                
+                flash('Session expired due to inactivity. Please login again.', 'warning')
+                return redirect(url_for('bank_login'))
+        except (ValueError, TypeError):
+            pass
+    
+    # Update last activity
+    session['last_activity'] = datetime.utcnow().isoformat()
+
+
+# ============================================================================
+# MFA SETUP ROUTES
+# ============================================================================
+
+@app.route('/bank/settings/mfa', methods=['GET', 'POST'])
+@login_required_bank
+def bank_mfa_setup():
+    """MFA setup page for employees."""
+    import pyotp
+    import qrcode
+    import io
+    import base64
+    
+    employee = Employee.query.get(session['employee_id'])
+    
+    if request.method == 'GET':
+        # Generate new secret if MFA not enabled
+        if not employee.mfa_enabled:
+            temp_secret = pyotp.random_base32()
+            session['mfa_temp_secret'] = temp_secret
+            
+            # Generate QR code
+            totp = pyotp.TOTP(temp_secret)
+            provisioning_uri = totp.provisioning_uri(
+                name=employee.email or employee.username,
+                issuer_name='CreditBridge'
+            )
+            
+            # Create QR code image
+            qr = qrcode.QRCode(version=1, box_size=5, border=2)
+            qr.add_data(provisioning_uri)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            
+            # Convert to base64 for HTML embedding
+            buffer = io.BytesIO()
+            img.save(buffer, format='PNG')
+            qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+            
+            return render_template('bank/mfa_setup.html', 
+                                   employee=employee, 
+                                   qr_code=qr_base64,
+                                   secret=temp_secret)
+        else:
+            return render_template('bank/mfa_setup.html', employee=employee)
+    
+    # POST - Enable or Disable MFA
+    action = request.form.get('action')
+    
+    if action == 'enable':
+        token = request.form.get('token', '').strip()
+        temp_secret = session.get('mfa_temp_secret')
+        
+        if not temp_secret:
+            flash('Setup session expired. Please try again.', 'error')
+            return redirect(url_for('bank_mfa_setup'))
+        
+        # Verify the token
+        totp = pyotp.TOTP(temp_secret)
+        if totp.verify(token, valid_window=1):
+            employee.mfa_secret = temp_secret
+            employee.mfa_enabled = True
+            
+            AuditLog.log(
+                employee_id=employee.id,
+                action='MFA_ENABLED',
+                entity_type='employee',
+                entity_id=employee.id,
+                ip=request.remote_addr
+            )
+            
+            db.session.commit()
+            session.pop('mfa_temp_secret', None)
+            
+            flash('Two-factor authentication enabled successfully!', 'success')
+        else:
+            flash('Invalid verification code. Please try again.', 'error')
+            return redirect(url_for('bank_mfa_setup'))
+    
+    elif action == 'disable':
+        # Require current password for security
+        password = request.form.get('password', '')
+        if check_password_hash(employee.password_hash, password):
+            employee.mfa_enabled = False
+            employee.mfa_secret = None
+            
+            AuditLog.log(
+                employee_id=employee.id,
+                action='MFA_DISABLED',
+                entity_type='employee',
+                entity_id=employee.id,
+                ip=request.remote_addr
+            )
+            
+            db.session.commit()
+            flash('Two-factor authentication disabled.', 'success')
+        else:
+            flash('Invalid password.', 'error')
+    
+    return redirect(url_for('bank_mfa_setup'))
+
 
 # Routes - Landing Page
 @app.route('/')
@@ -1594,31 +2193,82 @@ def logout():
 @app.route('/public/dashboard')
 @login_required_public
 def public_dashboard():
-    """Public dashboard"""
+    """Public dashboard with financial health, AI suggestions, and score breakdown"""
     customer = Customer.query.get(session['customer_id'])
     
-    # Get latest assessment
+    # Get latest assessment and financial profile
     latest_assessment = None
+    financial_profile = None
+    latest_user = None
+    
     if customer.users:
         latest_user = customer.users[-1]  # Most recent user
         latest_assessment = CreditAssessment.query.filter_by(
-            user_id=latest_user.id,
-            processed_by=None  # Public assessments only
+            user_id=latest_user.id
         ).order_by(CreditAssessment.assessment_date.desc()).first()
+        financial_profile = FinancialProfile.query.filter_by(
+            user_id=latest_user.id
+        ).first()
     
-    # Get document count
-    document_count = DocumentUpload.query.filter_by(customer_id=customer.id).count()
+    # Get AI improvement suggestions
+    improvement_plan = None
+    if latest_assessment:
+        improvement_plan = ImprovementPlan.query.filter_by(
+            assessment_id=latest_assessment.id
+        ).first()
     
-    # Get score history
+    # Get documents with status
+    documents = DocumentUpload.query.filter_by(customer_id=customer.id).order_by(
+        DocumentUpload.uploaded_at.desc()
+    ).all()
+    
+    # Get score history (more for chart)
     score_history = ScoreHistory.query.filter_by(customer_id=customer.id).order_by(
         ScoreHistory.created_at.desc()
-    ).limit(5).all()
+    ).limit(10).all()
+    
+    # Fallback: If no score history but we have an assessment, create synthetic entry
+    if not score_history and latest_assessment:
+        class SyntheticScoreEntry:
+            def __init__(self, assessment):
+                self.score = assessment.credit_score
+                self.risk_category = assessment.risk_category
+                self.created_at = assessment.assessment_date
+                self.assessment_id = assessment.id
+                self.document_count = 0
+        score_history = [SyntheticScoreEntry(latest_assessment)]
+    
+    # Parse features for behavioral metrics
+    behavioral_metrics = None
+    if latest_assessment and latest_assessment.features_json:
+        try:
+            features = json.loads(latest_assessment.features_json)
+            if 'behavioral' in features:
+                behavioral_metrics = features['behavioral']
+            else:
+                behavioral_metrics = features
+        except:
+            behavioral_metrics = {}
+    
+    # Parse AI suggestions from improvement plan
+    ai_suggestions = []
+    if improvement_plan and improvement_plan.suggestions_json:
+        try:
+            ai_suggestions = json.loads(improvement_plan.suggestions_json)
+            if not isinstance(ai_suggestions, list):
+                ai_suggestions = []
+        except:
+            ai_suggestions = []
     
     return render_template('public/dashboard.html',
-                         customer=customer,
-                         latest_assessment=latest_assessment,
-                         document_count=document_count,
-                         score_history=score_history)
+                          customer=customer,
+                          latest_assessment=latest_assessment,
+                          financial_profile=financial_profile,
+                          ai_suggestions=ai_suggestions,
+                          documents=documents,
+                          document_count=len(documents),
+                          score_history=score_history,
+                          behavioral_metrics=behavioral_metrics)
 
 @app.route('/public/assessment', methods=['GET', 'POST'])
 @login_required_public
@@ -1727,9 +2377,29 @@ def public_assessment():
         # Get ML prediction with documents
         ml_prediction = ml_model.predict(all_features, doc_results)
         
-        credit_score = ml_prediction['credit_score']
+        # Convert numpy types to native Python types for database compatibility
+        def convert_to_native(obj):
+            import numpy as np
+            if isinstance(obj, np.integer):
+                return int(obj)
+            elif isinstance(obj, np.floating):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            elif isinstance(obj, dict):
+                return {k: convert_to_native(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_to_native(i) for i in obj]
+            return obj
+        
+        credit_score = int(ml_prediction['credit_score'])
         risk_category = ml_prediction['risk_category']
-        confidence_level = ml_prediction['confidence_level']
+        confidence_level = float(ml_prediction['confidence_level'])
+        repayment_prob = float(ml_prediction['repayment_probability'])
+        
+        # Convert all features to native types
+        behavioral_features = convert_to_native(behavioral_features)
+        doc_features = convert_to_native(doc_features)
         
         # Create assessment
         assessment = CreditAssessment(
@@ -1737,7 +2407,7 @@ def public_assessment():
             profile_id=profile.id,
             credit_score=credit_score,
             risk_category=risk_category,
-            repayment_probability=ml_prediction['repayment_probability'],
+            repayment_probability=repayment_prob,
             features_json=json.dumps({
                 'behavioral': behavioral_features,
                 'document': doc_features,
@@ -1927,13 +2597,26 @@ def public_download_report(id):
 
 # Routes - Bank Portal Authentication
 @app.route('/bank/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute", methods=["POST"])
 def bank_login():
-    """Bank staff login"""
+    """
+    Bank staff login with security features:
+    - Account lockout after 5 failed attempts
+    - Login history tracking
+    - MFA support (if enabled)
+    - Session regeneration
+    """
+    # Check if MFA verification is pending
+    if session.get('mfa_pending'):
+        return redirect(url_for('bank_mfa_verify'))
+    
     if request.method == 'GET':
         return render_template('bank/login.html')
     
     username = request.form.get('username', '').strip()
     password = request.form.get('password', '').strip()
+    ip = request.remote_addr
+    user_agent = request.headers.get('User-Agent', '')
     
     if not username or not password:
         flash('Please enter username and password.', 'error')
@@ -1941,25 +2624,182 @@ def bank_login():
     
     employee = Employee.query.filter_by(username=username).first()
     
-    if employee and check_password_hash(employee.password_hash, password):
-        # Set session
-        session['employee_id'] = employee.id
-        session['employee_name'] = employee.full_name
-        session['employee_role'] = employee.role
-        session['portal_type'] = 'bank'
-        
-        flash(f'Welcome {employee.full_name}!', 'success')
-        return redirect(url_for('bank_dashboard'))
-    else:
+    # User not found - don't reveal this
+    if not employee:
         flash('Invalid credentials.', 'error')
         return render_template('bank/login.html')
+    
+    # Check if account is locked
+    if employee.is_locked():
+        remaining = employee.get_lockout_remaining()
+        minutes = remaining // 60 + 1
+        
+        LoginHistory.log_attempt(
+            employee_id=employee.id,
+            success=False,
+            ip=ip,
+            user_agent=user_agent,
+            failure_reason='account_locked'
+        )
+        db.session.commit()
+        
+        flash(f'Account locked. Try again in {minutes} minutes.', 'error')
+        return render_template('bank/login.html')
+    
+    # Check if account is active
+    if employee.status != 'ACTIVE':
+        LoginHistory.log_attempt(
+            employee_id=employee.id,
+            success=False,
+            ip=ip,
+            user_agent=user_agent,
+            failure_reason='account_inactive'
+        )
+        db.session.commit()
+        
+        flash('Account is inactive. Contact administrator.', 'error')
+        return render_template('bank/login.html')
+    
+    # Verify password
+    if not check_password_hash(employee.password_hash, password):
+        employee.record_failed_login()
+        
+        LoginHistory.log_attempt(
+            employee_id=employee.id,
+            success=False,
+            ip=ip,
+            user_agent=user_agent,
+            failure_reason='invalid_password'
+        )
+        db.session.commit()
+        
+        remaining_attempts = Employee.LOCKOUT_THRESHOLD - employee.failed_login_attempts
+        if remaining_attempts > 0 and remaining_attempts <= 3:
+            flash(f'Invalid credentials. {remaining_attempts} attempts remaining.', 'error')
+        elif remaining_attempts <= 0:
+            flash('Account locked due to too many failed attempts.', 'error')
+        else:
+            flash('Invalid credentials.', 'error')
+        
+        return render_template('bank/login.html')
+    
+    # Password correct - check MFA if enabled
+    if employee.mfa_enabled:
+        # Store employee ID temporarily for MFA verification
+        session['mfa_pending'] = True
+        session['mfa_employee_id'] = employee.id
+        return redirect(url_for('bank_mfa_verify'))
+    
+    # Complete login
+    _complete_login(employee, ip, user_agent)
+    return redirect(url_for('bank_dashboard'))
+
+
+def _complete_login(employee, ip=None, user_agent=None):
+    """Complete the login process after password (and MFA if enabled) verification."""
+    # Reset failed attempts
+    employee.record_successful_login()
+    
+    # Log successful login
+    LoginHistory.log_attempt(
+        employee_id=employee.id,
+        success=True,
+        ip=ip,
+        user_agent=user_agent
+    )
+    
+    # Audit log
+    AuditLog.log(
+        employee_id=employee.id,
+        action='LOGIN',
+        entity_type='session',
+        ip=ip,
+        user_agent=user_agent[:500] if user_agent else None
+    )
+    
+    db.session.commit()
+    
+    # Regenerate session ID to prevent session fixation
+    session.clear()
+    
+    # Set session data
+    session['employee_id'] = employee.id
+    session['employee_name'] = employee.full_name
+    session['employee_role'] = employee.role
+    session['portal_type'] = 'bank'
+    session['login_time'] = datetime.utcnow().isoformat()
+    session['last_activity'] = datetime.utcnow().isoformat()
+    session.permanent = True
+    
+    flash(f'Welcome {employee.full_name}!', 'success')
+
+
+@app.route('/bank/mfa-verify', methods=['GET', 'POST'])
+@limiter.limit("3 per minute", methods=["POST"])
+def bank_mfa_verify():
+    """MFA verification step during login."""
+    if not session.get('mfa_pending'):
+        return redirect(url_for('bank_login'))
+    
+    employee_id = session.get('mfa_employee_id')
+    employee = Employee.query.get(employee_id)
+    
+    if not employee:
+        session.clear()
+        return redirect(url_for('bank_login'))
+    
+    if request.method == 'GET':
+        return render_template('bank/mfa_verify.html', employee=employee)
+    
+    token = request.form.get('token', '').strip()
+    ip = request.remote_addr
+    user_agent = request.headers.get('User-Agent', '')
+    
+    if not token:
+        flash('Please enter the verification code.', 'error')
+        return render_template('bank/mfa_verify.html', employee=employee)
+    
+    if employee.verify_mfa(token):
+        # Clear MFA pending state
+        session.pop('mfa_pending', None)
+        session.pop('mfa_employee_id', None)
+        
+        # Complete login
+        _complete_login(employee, ip, user_agent)
+        return redirect(url_for('bank_dashboard'))
+    else:
+        LoginHistory.log_attempt(
+            employee_id=employee.id,
+            success=False,
+            ip=ip,
+            user_agent=user_agent,
+            failure_reason='mfa_failed'
+        )
+        db.session.commit()
+        
+        flash('Invalid verification code. Please try again.', 'error')
+        return render_template('bank/mfa_verify.html', employee=employee)
+
 
 @app.route('/bank/logout')
 def bank_logout():
-    """Bank logout"""
+    """Bank logout with audit logging."""
+    employee_id = session.get('employee_id')
+    
+    if employee_id:
+        AuditLog.log(
+            employee_id=employee_id,
+            action='LOGOUT',
+            entity_type='session',
+            ip=request.remote_addr,
+            user_agent=request.headers.get('User-Agent', '')[:500]
+        )
+        db.session.commit()
+    
     session.clear()
     flash('Logged out successfully!', 'success')
     return redirect(url_for('landing'))
+
 
 @app.route('/bank/document/<int:doc_id>')
 @login_required_bank
@@ -2302,7 +3142,16 @@ def bank_assessment_result(id):
     if not documents and assessment.user and assessment.user.customer_id:
         documents = DocumentUpload.query.filter_by(customer_id=assessment.user.customer_id).all()
     
-    return render_template('bank/result.html', assessment=assessment, features=features, analysts=analysts, documents=documents)
+    # Prepare enhanced analysis context
+    from analysis_calculator import prepare_analysis_context
+    analysis = prepare_analysis_context(assessment, features)
+    
+    return render_template('bank/result.html', 
+                           assessment=assessment, 
+                           features=features, 
+                           analysts=analysts, 
+                           documents=documents,
+                           analysis=analysis)
 
 
 @app.route('/bank/assessment/<int:id>/download_pdf')
@@ -2402,7 +3251,7 @@ def bank_assessment_delete(id):
 @app.route('/bank/applications')
 @login_required_bank
 def bank_applications():
-    """List bank applications - filtered by role and branch"""
+    """List bank applications - filtered by role, branch, and status"""
     employee = Employee.query.get(session['employee_id'])
     if not employee:
         flash('Session expired. Please login again.', 'error')
@@ -2411,25 +3260,48 @@ def bank_applications():
     page = request.args.get('page', 1, type=int)
     per_page = 20
     
-    # Get branch filter from query params (for admin/credit_manager)
+    # Get filters from query params
     branch_filter = request.args.get('branch', type=int)
+    status_filter = request.args.get('status')  # For Credit Manager tabs
     
     # Get all branches for dropdown (only for admin/credit_manager)
     branches = []
     if employee.role in ['head_of_bank', 'credit_manager']:
         branches = Branch.query.filter_by(status='active').all()
     
-    # Use role-based filtering
-    applications = get_accessible_assessments(employee, branch_filter).filter(
+    # Base query with role-based filtering
+    base_query = get_accessible_assessments(employee, branch_filter).filter(
         CreditAssessment.created_by.isnot(None)
-    ).order_by(CreditAssessment.assessment_date.desc()).paginate(
-        page=page, per_page=per_page, error_out=False
     )
+    
+    # Apply status filter if provided
+    query = base_query
+    if status_filter:
+        query = query.filter(CreditAssessment.status == status_filter)
+    
+    applications = query.order_by(
+        CreditAssessment.assessment_date.desc()
+    ).paginate(page=page, per_page=per_page, error_out=False)
+    
+    # Get status counts for tabs (Credit Manager)
+    status_counts = None
+    if employee.role == 'credit_manager':
+        base_for_counts = get_accessible_assessments(employee, branch_filter).filter(
+            CreditAssessment.created_by.isnot(None)
+        )
+        status_counts = {
+            'pending_approval': base_for_counts.filter(CreditAssessment.status == 'pending_approval').count(),
+            'approved': base_for_counts.filter(CreditAssessment.status == 'approved').count(),
+            'rejected': base_for_counts.filter(CreditAssessment.status == 'rejected').count(),
+            'all': base_for_counts.count()
+        }
     
     return render_template('bank/applications.html', 
                            applications=applications, 
                            branches=branches,
                            selected_branch=branch_filter,
+                           status_filter=status_filter,
+                           status_counts=status_counts,
                            employee=employee)
 
 @app.route('/bank/customers')
@@ -2901,8 +3773,21 @@ def export_analytics():
 @login_required_bank
 @permission_required('MANAGE_USERS', 'ALL')
 def bank_team_management():
-    """Team management for Branch Manager"""
-    employees = Employee.query.order_by(Employee.role, Employee.full_name).all()
+    """Team management for Branch Manager - branch-specific"""
+    employee = Employee.query.get(session['employee_id'])
+    if not employee:
+        flash('Session expired. Please login again.', 'error')
+        return redirect(url_for('bank_login'))
+    
+    # Branch isolation: Branch Managers only see their branch's employees
+    if employee.role == 'head_of_bank':
+        # Head of Bank can see all employees
+        employees = Employee.query.order_by(Employee.role, Employee.full_name).all()
+    else:
+        # Branch Manager can only see employees from their branch
+        employees = Employee.query.filter_by(branch_id=employee.branch_id).order_by(
+            Employee.role, Employee.full_name
+        ).all()
     
     # Calculate stats for each employee
     employee_stats = []
@@ -2937,6 +3822,48 @@ def bank_audit_logs():
     )
     
     return render_template('bank/audit_logs.html', logs=logs)
+
+
+@app.route('/bank/login-history')
+@login_required_bank
+@permission_required('VIEW_AUDIT_LOGS', 'ALL')
+def bank_login_history():
+    """View login history for security monitoring."""
+    page = request.args.get('page', 1, type=int)
+    per_page = 50
+    
+    # Filter options
+    employee_id = request.args.get('employee_id', type=int)
+    success_filter = request.args.get('success')
+    
+    query = LoginHistory.query
+    
+    if employee_id:
+        query = query.filter(LoginHistory.employee_id == employee_id)
+    
+    if success_filter == 'true':
+        query = query.filter(LoginHistory.success == True)
+    elif success_filter == 'false':
+        query = query.filter(LoginHistory.success == False)
+    
+    history = query.order_by(LoginHistory.login_time.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    # Get employees for filter dropdown
+    employees = Employee.query.order_by(Employee.full_name).all()
+    
+    # Get failed login stats
+    from sqlalchemy import func
+    failed_count = LoginHistory.query.filter(
+        LoginHistory.success == False,
+        LoginHistory.login_time >= datetime.utcnow() - timedelta(hours=24)
+    ).count()
+    
+    return render_template('bank/login_history.html', 
+                           history=history, 
+                           employees=employees,
+                           failed_count_24h=failed_count)
 
 
 @app.route('/bank/escalations')
@@ -3844,6 +4771,136 @@ def seed_sample_assessments():
     
     db.session.commit()
     print(f"[OK] Seeded {len(sample_data)} sample assessments")
+
+
+# ============================================================================
+# ASYNC PDF GENERATION ENDPOINTS
+# ============================================================================
+
+@app.route('/pdf/generate/<int:assessment_id>', methods=['POST'])
+def queue_pdf_generation(assessment_id):
+    """
+    Queue async PDF generation.
+    
+    Returns task_id for status polling.
+    """
+    # Check authentication (bank employee or public user)
+    employee_id = session.get('employee_id')
+    customer_id = session.get('customer_id')
+    
+    if not employee_id and not customer_id:
+        return jsonify({'error': 'Authentication required'}), 401
+    
+    # Get assessment
+    assessment = CreditAssessment.query.get_or_404(assessment_id)
+    
+    # Authorization check
+    if employee_id:
+        employee = Employee.query.get(employee_id)
+        if not employee.has_permission('ALL') and not assessment.can_be_viewed_by(employee):
+            return jsonify({'error': 'Not authorized'}), 403
+    
+    # Check for existing pending/processing report
+    existing = PDFReport.query.filter(
+        PDFReport.assessment_id == assessment_id,
+        PDFReport.status.in_(['queued', 'processing'])
+    ).first()
+    
+    if existing:
+        return jsonify({
+            'task_id': existing.id,
+            'status': existing.status,
+            'message': 'PDF generation already in progress',
+            'status_url': f'/pdf/status/{existing.id}'
+        })
+    
+    # Create tracking record
+    task_id = str(uuid.uuid4())
+    report = PDFReport(
+        id=task_id,
+        assessment_id=assessment_id,
+        status='queued',
+        created_at=datetime.utcnow()
+    )
+    db.session.add(report)
+    db.session.commit()
+    
+    # Queue Celery task
+    try:
+        from tasks.pdf_tasks import generate_pdf_task
+        generate_pdf_task.apply_async(
+            args=[task_id, assessment_id, assessment.user_id],
+            task_id=task_id
+        )
+    except Exception as e:
+        # Celery not available - fall back to sync generation
+        app.logger.warning(f"Celery not available, falling back to sync: {e}")
+        report.status = 'failed'
+        report.error_message = 'Background task system not available. Use sync download.'
+        db.session.commit()
+        return jsonify({
+            'error': 'Background task system not available',
+            'fallback_url': f'/bank/assessment/{assessment_id}/download_pdf'
+        }), 503
+    
+    return jsonify({
+        'task_id': task_id,
+        'status': 'queued',
+        'status_url': f'/pdf/status/{task_id}',
+        'message': 'PDF generation queued'
+    })
+
+
+@app.route('/pdf/status/<task_id>')
+def check_pdf_status(task_id):
+    """Check PDF generation status."""
+    # Basic auth check
+    if not session.get('employee_id') and not session.get('customer_id'):
+        return jsonify({'error': 'Authentication required'}), 401
+    
+    report = PDFReport.query.get_or_404(task_id)
+    return jsonify(report.to_dict())
+
+
+@app.route('/pdf/download/<task_id>')
+def download_async_pdf(task_id):
+    """Download completed async PDF."""
+    # Basic auth check
+    if not session.get('employee_id') and not session.get('customer_id'):
+        return jsonify({'error': 'Authentication required'}), 401
+    
+    report = PDFReport.query.get_or_404(task_id)
+    
+    if report.status != 'complete':
+        return jsonify({
+            'error': 'PDF not ready',
+            'status': report.status
+        }), 400
+    
+    if not report.file_path or not os.path.exists(report.file_path):
+        return jsonify({'error': 'PDF file not found'}), 404
+    
+    return send_file(
+        report.file_path,
+        as_attachment=True,
+        download_name=f'creditbridge_report_{report.assessment_id}.pdf',
+        mimetype='application/pdf'
+    )
+
+
+@app.route('/pdf/list/<int:assessment_id>')
+def list_pdf_reports(assessment_id):
+    """List all PDF generation attempts for an assessment."""
+    if not session.get('employee_id') and not session.get('customer_id'):
+        return jsonify({'error': 'Authentication required'}), 401
+    
+    reports = PDFReport.query.filter_by(assessment_id=assessment_id)\
+        .order_by(PDFReport.created_at.desc()).limit(10).all()
+    
+    return jsonify({
+        'assessment_id': assessment_id,
+        'reports': [r.to_dict() for r in reports]
+    })
 
 
 # Application startup

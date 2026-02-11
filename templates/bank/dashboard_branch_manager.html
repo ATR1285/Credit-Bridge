@@ -268,116 +268,80 @@
             </div>
         </div>
     </div>
+    {% endblock %}
 
-    <!-- Quick Actions -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0 py-3">
-                    <h5 class="mb-0"><i class="bi bi-lightning-fill me-2"></i>Quick Actions</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <a href="{{ url_for('bank_assessment_new') }}" class="btn btn-primary w-100 py-3">
-                                <i class="bi bi-plus-circle me-2"></i>New Assessment
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ url_for('bank_applications') }}" class="btn btn-outline-primary w-100 py-3">
-                                <i class="bi bi-folder2-open me-2"></i>All Applications
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ url_for('bank_customers') }}" class="btn btn-outline-primary w-100 py-3">
-                                <i class="bi bi-people me-2"></i>Customers
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ url_for('bank_analytics') }}" class="btn btn-outline-primary w-100 py-3">
-                                <i class="bi bi-graph-up me-2"></i>Analytics
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Risk Distribution Pie Chart
-        const riskCtx = document.getElementById('riskDistributionChart');
-        if (riskCtx) {
-            new Chart(riskCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Low Risk', 'Medium Risk', 'High Risk'],
-                    datasets: [{
-                        data: [
-                            {{ stats.portfolio_risk.low_risk_count }},
-                    {{ stats.portfolio_risk.medium_risk_count }},
+    {% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Risk Distribution Pie Chart
+            const riskCtx = document.getElementById('riskDistributionChart');
+            if (riskCtx) {
+                new Chart(riskCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Low Risk', 'Medium Risk', 'High Risk'],
+                        datasets: [{
+                            data: [
+                                {{ stats.portfolio_risk.low_risk_count }},
+                        {{ stats.portfolio_risk.medium_risk_count }},
                         {{ stats.portfolio_risk.high_risk_count }}
                     ],
-        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-            borderWidth: 0
-    }]
+            backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                borderWidth: 0
+        }]
             },
-        options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: {
-                position: 'bottom',
-                labels: { padding: 15, usePointStyle: true }
-            }
-        },
-        cutout: '65%'
-    }
+            options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { padding: 15, usePointStyle: true }
+                }
+            },
+            cutout: '65%'
+        }
         });
     }
 
-    // Weekly Trend Line Chart
-    const trendCtx = document.getElementById('weeklyTrendChart');
-    if (trendCtx) {
-        new Chart(trendCtx, {
-            type: 'line',
-            data: {
-                labels: {{ stats.trend.labels | tojson }},
-    datasets: [{
-        label: 'Assessments',
-        data: {{ stats.trend.data | tojson }},
-        borderColor: '#6366f1',
-        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-        borderWidth: 3,
-        fill: true,
-        tension: 0.4,
-        pointRadius: 4,
-        pointBackgroundColor: '#6366f1'
+        // Weekly Trend Line Chart
+        const trendCtx = document.getElementById('weeklyTrendChart');
+        if (trendCtx) {
+            new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: {{ stats.trend.labels | tojson }},
+        datasets: [{
+            label: 'Assessments',
+            data: {{ stats.trend.data | tojson }},
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointBackgroundColor: '#6366f1'
                 }]
             },
-    options: {
-        responsive: true,
-            maintainAspectRatio: false,
-                plugins: {
-            legend: { display: false }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                    grid: { color: 'rgba(0,0,0,0.05)' }
+        options: {
+            responsive: true,
+                maintainAspectRatio: false,
+                    plugins: {
+                legend: { display: false }
             },
-            x: {
-                grid: { display: false }
+            scales: {
+                y: {
+                    beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                },
+                x: {
+                    grid: { display: false }
+                }
             }
         }
-    }
         });
     }
 });
-</script>
-{% endblock %}
+    </script>
+    {% endblock %}

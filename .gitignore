@@ -1,3 +1,14 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -19,42 +30,51 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
 # Virtual Environment
 venv/
-env/
 ENV/
+env/
 
-# Environment variables
-.env
-
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# OS
-.DS_Store
-Thumbs.db
+# Uploads and Reports
+uploads/
+reports/
+temp_files/
 
-# Application specific
-uploads/*
-!uploads/.gitkeep
-reports/*
-!reports/.gitkeep
+# Models
 models/*.pkl
 models/*.joblib
 
 # Logs
 *.log
+logs/
 
-# Database
-*.db
-*.sqlite3
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Temporary files
-tmp/
-temp/
 *.tmp
+*.bak
+*.cache
+
+# Debug files
+debug_*.py
+
+# Migrations (optional - keep versions/)
+migrations/alembic.ini
+
+# MLflow
+mlruns/
