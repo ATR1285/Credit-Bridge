@@ -25,13 +25,13 @@
                             <label class="form-label">Document Type <span class="text-danger">*</span></label>
                             <select name="document_type" class="form-select" required>
                                 <option value="">Select document type...</option>
-                                <option value="aadhaar">Aadhaar Card (+20 points)</option>
-                                <option value="pan">PAN Card (+15 points)</option>
-                                <option value="bank_statement">Bank Statement (+25 points)</option>
-                                <option value="salary_slip">Salary Slip (+20 points)</option>
-                                <option value="utility_bill">Utility Bill (+10 points)</option>
-                                <option value="gst_certificate">GST Certificate (+15 points)</option>
-                                <option value="itr">Income Tax Return (+25 points)</option>
+                                <option value="aadhaar">Aadhaar Card</option>
+                                <option value="pan">PAN Card</option>
+                                <option value="bank_statement">Bank Statement</option>
+                                <option value="salary_slip">Salary Slip</option>
+                                <option value="utility_bill">Utility Bill</option>
+                                <option value="gst_certificate">GST Certificate</option>
+                                <option value="itr">Income Tax Return</option>
                             </select>
                         </div>
 
@@ -58,87 +58,58 @@
                 </div>
             </div>
 
-            <!-- Document Bonus Info -->
-            <div class="card mt-4">
-                <div class="card-header">
-                    <i class="bi bi-info-circle me-2"></i>Document Score Bonuses
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between py-2 border-bottom">
-                        <span>Bank Statement / ITR</span>
-                        <span class="text-success fw-bold">+25 pts</span>
+            <!-- Uploaded Documents List -->
+            <div class="col-lg-7">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-folder me-2"></i>Your Documents</span>
+                        <span class="badge bg-primary">{{ documents | length }} uploaded</span>
                     </div>
-                    <div class="d-flex justify-content-between py-2 border-bottom">
-                        <span>Aadhaar / Salary Slip</span>
-                        <span class="text-success fw-bold">+20 pts</span>
-                    </div>
-                    <div class="d-flex justify-content-between py-2 border-bottom">
-                        <span>PAN / GST Certificate</span>
-                        <span class="text-success fw-bold">+15 pts</span>
-                    </div>
-                    <div class="d-flex justify-content-between py-2">
-                        <span>Utility Bill</span>
-                        <span class="text-success fw-bold">+10 pts</span>
-                    </div>
-                    <p class="text-muted small mt-3 mb-0">
-                        <i class="bi bi-exclamation-circle"></i> Maximum combined bonus: 100 points
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Uploaded Documents List -->
-        <div class="col-lg-7">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-folder me-2"></i>Your Documents</span>
-                    <span class="badge bg-primary">{{ documents | length }} uploaded</span>
-                </div>
-                <div class="card-body">
-                    {% if documents %}
-                    {% for doc in documents %}
-                    <div class="document-item">
-                        <div
-                            class="doc-icon {% if doc.verified_status == 'verified' %}verified{% elif doc.verified_status == 'rejected' %}rejected{% else %}pending{% endif %}">
-                            <i
-                                class="bi bi-file-earmark-{% if doc.document_type in ['aadhaar', 'pan'] %}person{% elif doc.document_type == 'bank_statement' %}text{% else %}check{% endif %}"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h6 class="mb-1 fw-medium">{{ doc.document_type | replace('_', ' ') | title }}</h6>
-                            <small class="text-muted">
-                                Uploaded {{ doc.uploaded_at.strftime('%d %b %Y, %I:%M %p') }}
-                            </small>
-                        </div>
-                        <div class="text-end">
-                            {% if doc.verified_status == 'verified' %}
-                            <span class="badge bg-success">
-                                <i class="bi bi-check-circle"></i> Verified
-                            </span>
-                            <div class="small text-success mt-1">
-                                Score: {{ (doc.ai_verification_score * 100) | round(0) }}%
+                    <div class="card-body">
+                        {% if documents %}
+                        {% for doc in documents %}
+                        <div class="document-item">
+                            <div
+                                class="doc-icon {% if doc.verified_status == 'verified' %}verified{% elif doc.verified_status == 'rejected' %}rejected{% else %}pending{% endif %}">
+                                <i
+                                    class="bi bi-file-earmark-{% if doc.document_type in ['aadhaar', 'pan'] %}person{% elif doc.document_type == 'bank_statement' %}text{% else %}check{% endif %}"></i>
                             </div>
-                            {% elif doc.verified_status == 'rejected' %}
-                            <span class="badge bg-danger">
-                                <i class="bi bi-x-circle"></i> Rejected
-                            </span>
-                            {% else %}
-                            <span class="badge bg-warning text-dark">
-                                <i class="bi bi-clock"></i> Pending
-                            </span>
-                            {% endif %}
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1 fw-medium">{{ doc.document_type | replace('_', ' ') | title }}</h6>
+                                <small class="text-muted">
+                                    Uploaded {{ doc.uploaded_at.strftime('%d %b %Y, %I:%M %p') }}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                {% if doc.verified_status == 'verified' %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle"></i> Verified
+                                </span>
+                                <div class="small text-success mt-1">
+                                    Score: {{ (doc.ai_verification_score * 100) | round(0) }}%
+                                </div>
+                                {% elif doc.verified_status == 'rejected' %}
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-x-circle"></i> Rejected
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-clock"></i> Pending
+                                </span>
+                                {% endif %}
+                            </div>
                         </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-folder2-open"></i>
+                            <h5>No Documents Yet</h5>
+                            <p class="mb-0">Upload your first document to boost your credit score</p>
+                        </div>
+                        {% endif %}
                     </div>
-                    {% endfor %}
-                    {% else %}
-                    <div class="empty-state">
-                        <i class="bi bi-folder2-open"></i>
-                        <h5>No Documents Yet</h5>
-                        <p class="mb-0">Upload your first document to boost your credit score</p>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
+    {% endblock %}

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
@@ -9,147 +9,333 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@500;600;700;800;900&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- GSAP Core + ScrollTrigger + TextPlugin -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/TextPlugin.min.js"></script>
     <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- GSAP for Professional Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+    <!-- Apply theme immediately to prevent flash -->
+    <script>
+        (function () {
+            var theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
 
     <style>
-        /* CSS Custom Properties for Dynamic Theming */
+        /* Theme Variables */
         :root {
-            --bg-gradient: linear-gradient(135deg, #f0f2ff 0%, #e0e7ff 50%, #c7d2fe 100%);
-            --glass-bg: rgba(255, 255, 255, 0.25);
-            --glass-border: rgba(255, 255, 255, 0.18);
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
             --text-primary: #1e293b;
             --text-secondary: #64748b;
-            --shadow-primary: 0 25px 45px -10px rgba(0, 0, 0, 0.1);
-            --shadow-glow: 0 0 30px rgba(102, 126, 234, 0.3);
+            --text-muted: #94a3b8;
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --accent: #667eea;
+            --accent-secondary: #764ba2;
+            --navbar-bg: rgba(255, 255, 255, 0.85);
+            --particle-color: rgba(102, 126, 234, 0.6);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #1e293b;
+            --bg-light: #0f172a;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --text-dark: #f1f5f9;
+            --border-color: #334155;
+            --border-light: rgba(255, 255, 255, 0.1);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            --navbar-bg: rgba(15, 23, 42, 0.9);
+            --particle-color: rgba(139, 92, 246, 0.7);
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background 0.4s, color 0.4s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        main {
+            flex: 1;
         }
 
         /* Animated Background */
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-gradient);
-            background-attachment: fixed;
-            position: relative;
-            overflow-x: hidden;
-            min-height: 100vh;
-        }
-
-        body::before {
-            content: '';
+        .animated-bg {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background:
-                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
-            z-index: -2;
-            animation: float 20s ease-in-out infinite;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translateY(0px) rotate(0deg);
-            }
-
-            33% {
-                transform: translateY(-20px) rotate(120deg);
-            }
-
-            66% {
-                transform: translateY(20px) rotate(240deg);
-            }
-        }
-
-        /* Super Glassmorphism Navbar */
-        .navbar {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(25px) saturate(180%);
-            -webkit-backdrop-filter: blur(25px) saturate(180%);
-            border-bottom: 1px solid var(--glass-border);
-            box-shadow: var(--shadow-primary);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            border-radius: 0 0 20px 20px;
-        }
-
-        .navbar-brand {
-            font-weight: 800;
-            font-size: 1.8rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            background-size: 200% 200%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradientShift 4s ease-in-out infinite;
-            text-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
-        }
-
-        @keyframes gradientShift {
-
-            0%,
-            100% {
-                background-position: 0% 50%;
-            }
-
-            50% {
-                background-position: 100% 50%;
-            }
-        }
-
-        .nav-link {
-            font-weight: 600;
-            color: var(--text-secondary) !important;
-            padding: 0.75rem 1.5rem !important;
-            margin: 0 0.5rem;
-            border-radius: 16px;
-            position: relative;
+            z-index: -1;
             overflow: hidden;
-            transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
         }
 
-        .nav-link::before {
+        /* Animated Grid Pattern */
+        .animated-bg::before {
             content: '';
             position: absolute;
             top: 0;
-            left: -100%;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                linear-gradient(rgba(102, 126, 234, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(102, 126, 234, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        [data-theme="dark"] .animated-bg::before {
+            background-image:
+                linear-gradient(rgba(139, 92, 246, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 92, 246, 0.06) 1px, transparent 1px);
+        }
+
+        @keyframes gridMove {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            100% {
+                transform: translate(50px, 50px);
+            }
+        }
+
+        .bg-gradient-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.6;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.5), rgba(118, 75, 162, 0.3));
+            top: -15%;
+            left: -10%;
+            animation: orbFloat1 25s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            width: 450px;
+            height: 450px;
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.4), rgba(244, 114, 182, 0.25));
+            top: 40%;
+            right: -12%;
+            animation: orbFloat2 30s ease-in-out infinite;
+        }
+
+        .orb-3 {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(147, 197, 253, 0.25));
+            bottom: -10%;
+            left: 25%;
+            animation: orbFloat3 35s ease-in-out infinite;
+        }
+
+        @keyframes orbFloat1 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            25% {
+                transform: translate(80px, 40px) scale(1.1);
+            }
+
+            50% {
+                transform: translate(40px, 80px) scale(0.95);
+            }
+
+            75% {
+                transform: translate(-40px, 30px) scale(1.05);
+            }
+        }
+
+        @keyframes orbFloat2 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            33% {
+                transform: translate(-60px, 50px) rotate(120deg);
+            }
+
+            66% {
+                transform: translate(30px, -40px) rotate(240deg);
+            }
+        }
+
+        @keyframes orbFloat3 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(100px, -60px) scale(1.15);
+            }
+        }
+
+        [data-theme="dark"] .orb-1 {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(99, 102, 241, 0.25));
+        }
+
+        [data-theme="dark"] .orb-2 {
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(167, 139, 250, 0.2));
+        }
+
+        [data-theme="dark"] .orb-3 {
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(34, 211, 238, 0.2));
+        }
+
+        /* Additional Orbs for GSAP */
+        .orb-4 {
+            width: 350px;
+            height: 350px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(52, 211, 153, 0.2));
+            top: 60%;
+            left: -5%;
+            animation: orbFloat2 28s ease-in-out infinite reverse;
+        }
+
+        .orb-5 {
+            width: 280px;
+            height: 280px;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(245, 158, 11, 0.15));
+            top: 10%;
+            right: 30%;
+            animation: orbFloat1 32s ease-in-out infinite;
+        }
+
+        [data-theme="dark"] .orb-4 {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(20, 184, 166, 0.15));
+        }
+
+        [data-theme="dark"] .orb-5 {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.1));
+        }
+
+        /* GSAP Canvas for Geometric Animations */
+        #gsapCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-            transition: left 0.6s;
+            pointer-events: none;
         }
 
-        .nav-link:hover::before {
-            left: 100%;
+        /* GSAP Floating Shapes Container */
+        .gsap-shapes-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
         }
 
-        .nav-link:hover {
-            color: #667eea !important;
-            background: rgba(102, 126, 234, 0.15);
-            transform: translateY(-4px) scale(1.05);
-            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
+        .gsap-shape {
+            position: absolute;
+            opacity: 0;
+            will-change: transform, opacity;
+        }
+
+        .gsap-shape.circle {
+            border-radius: 50%;
+            border: 2px solid var(--particle-color);
+            background: transparent;
+        }
+
+        .gsap-shape.square {
+            border: 2px solid rgba(236, 72, 153, 0.4);
+            background: transparent;
+        }
+
+        .gsap-shape.triangle {
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 26px solid rgba(16, 185, 129, 0.4);
+            background: transparent !important;
+        }
+
+        .gsap-shape.diamond {
+            transform: rotate(45deg);
+            border: 2px solid rgba(251, 191, 36, 0.4);
+            background: transparent;
+        }
+
+        .gsap-shape.hexagon {
+            background: rgba(99, 102, 241, 0.15);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        }
+
+        .gsap-shape.cross {
+            background: transparent;
+            position: relative;
+        }
+
+        .gsap-shape.cross::before,
+        .gsap-shape.cross::after {
+            content: '';
+            position: absolute;
+            background: rgba(139, 92, 246, 0.5);
+        }
+
+        .gsap-shape.cross::before {
+            width: 100%;
+            height: 30%;
+            top: 35%;
+            left: 0;
+        }
+
+        .gsap-shape.cross::after {
+            width: 30%;
+            height: 100%;
+            left: 35%;
+            top: 0;
         }
 
         /* Floating Particles */
-        .particles {
+        .particles-container {
             position: fixed;
             top: 0;
             left: 0;
@@ -161,158 +347,456 @@
 
         .particle {
             position: absolute;
-            background: rgba(102, 126, 234, 0.6);
+            background: var(--particle-color);
             border-radius: 50%;
-            pointer-events: none;
+            animation: particleFloat 15s infinite;
+            box-shadow: 0 0 10px var(--particle-color), 0 0 20px var(--particle-color);
         }
 
-        /* Enhanced Alerts */
-        .alert {
-            border: none;
-            border-radius: 20px;
-            box-shadow: var(--shadow-primary), 0 0 0 1px rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            transform: perspective(1000px) rotateX(5deg);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .alert::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
-        }
-
-        /* Supercharged Footer */
-        .footer {
-            background: linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(59, 130, 246, 0.95) 100%);
-            backdrop-filter: blur(20px);
-            color: white;
-            padding: 4rem 0 2.5rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .footer::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-            animation: sparkle 20s linear infinite;
-        }
-
-        @keyframes sparkle {
+        @keyframes particleFloat {
             0% {
-                transform: translateX(0) translateY(0);
+                transform: translateY(100vh) rotate(0deg) scale(0);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 0.8;
+            }
+
+            90% {
+                opacity: 0.8;
             }
 
             100% {
-                transform: translateX(100px) translateY(100px);
+                transform: translateY(-100px) rotate(720deg) scale(1);
+                opacity: 0;
             }
         }
 
-        .footer h5 {
+        /* Glassmorphism Navbar */
+        .navbar {
+            background: var(--navbar-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            transition: all 0.4s;
+        }
+
+        .navbar-brand {
             font-weight: 800;
-            font-size: 1.8rem;
-            background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .footer h5::after {
-            content: '';
+        .nav-link {
+            font-weight: 500;
+            color: var(--text-secondary) !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 10px;
+            margin: 0 4px;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover {
+            color: var(--accent) !important;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .nav-link.active {
+            color: var(--accent) !important;
+            background: rgba(102, 126, 234, 0.15);
+        }
+
+        /* Dark Mode Toggle */
+        .theme-toggle {
+            position: relative;
+            width: 56px;
+            height: 28px;
+            background: var(--border-color);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.4s;
+            border: none;
+            padding: 0;
+        }
+
+        [data-theme="dark"] .theme-toggle {
+            background: linear-gradient(135deg, #1e293b, #334155);
+        }
+
+        .theme-toggle-thumb {
             position: absolute;
-            bottom: -8px;
-            left: 0;
-            width: 60px;
-            height: 4px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 3px;
-            box-shadow: 0 0 20px rgba(102, 126, 234, 0.6);
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        [data-theme="dark"] .theme-toggle-thumb {
+            left: 30px;
+            background: #1e293b;
+        }
+
+        .theme-toggle-thumb i {
+            font-size: 14px;
+            color: #f59e0b;
+        }
+
+        [data-theme="dark"] .theme-toggle-thumb i {
+            color: #a5b4fc;
+        }
+
+        .theme-toggle-thumb i.bi-moon-stars-fill {
+            display: none;
+        }
+
+        .theme-toggle-thumb i.bi-sun-fill {
+            display: block;
+        }
+
+        [data-theme="dark"] .theme-toggle-thumb i.bi-moon-stars-fill {
+            display: block;
+        }
+
+        [data-theme="dark"] .theme-toggle-thumb i.bi-sun-fill {
+            display: none;
+        }
+
+        /* User Dropdown */
+        .user-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 50px;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .user-dropdown-toggle:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .dropdown-menu {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 8px;
+        }
+
+        .dropdown-item {
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 10px 16px;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: var(--accent);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            transition: all 0.4s;
+        }
+
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Alerts */
+        .alert {
+            border: none;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 10px 20px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-outline-primary {
+            color: var(--accent);
+            border-color: var(--accent);
+            border-radius: 10px;
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* Footer - Sticky at bottom */
+        .footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            padding: 16px 0;
+            margin-top: auto;
+            transition: all 0.4s;
+            flex-shrink: 0;
+        }
+
+        .footer-text {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .footer-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+
+        .footer-link:hover {
+            color: var(--accent);
+        }
+
+        /* Global Text Fixes */
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+
+        .text-secondary {
+            color: var(--text-secondary) !important;
+        }
+
+        .form-label,
+        label {
+            color: var(--text-primary) !important;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            color: var(--text-primary);
+        }
+
+        .card-header {
+            color: var(--text-primary) !important;
+        }
+
+        .modal-content {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        /* Form Controls */
+        .form-control,
+        .form-select {
+            background-color: var(--bg-card) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--border-color) !important;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background-color: var(--bg-card) !important;
+            color: var(--text-primary) !important;
+        }
+
+        .form-control::placeholder {
+            color: var(--text-muted) !important;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Global Theme Adaptations */
+        [data-theme="dark"] h1,
+        [data-theme="dark"] h2,
+        [data-theme="dark"] h3,
+        [data-theme="dark"] h4,
+        [data-theme="dark"] h5,
+        [data-theme="dark"] h6 {
+            color: #f1f5f9 !important;
+        }
+
+        [data-theme="dark"] .text-muted,
+        [data-theme="dark"] p.text-muted {
+            color: #94a3b8 !important;
+        }
+
+        /* Modal Dark Mode Fixes */
+        [data-theme="dark"] .modal-content {
+            background: #1e293b !important;
+            color: #f1f5f9 !important;
+            border: 1px solid #334155;
+        }
+
+        [data-theme="dark"] .modal-header,
+        [data-theme="dark"] .modal-footer {
+            border-color: #334155 !important;
+            background: #111827 !important;
+        }
+
+        [data-theme="dark"] .modal-body {
+            color: #cbd5e1 !important;
+        }
+
+        [data-theme="dark"] .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
         }
     </style>
 
     {% block styles %}{% endblock %}
-    {% block head %}{% endblock %}
 </head>
 
 <body>
-    <!-- Floating Particles Background -->
-    <div class="particles" id="particles"></div>
+    <!-- GSAP Animated Background -->
+    <div class="animated-bg">
+        <!-- Canvas for geometric shapes and connecting lines -->
+        <canvas id="gsapCanvas"></canvas>
+        <!-- Floating Gradient Orbs -->
+        <div class="bg-gradient-orb orb-1"></div>
+        <div class="bg-gradient-orb orb-2"></div>
+        <div class="bg-gradient-orb orb-3"></div>
+        <div class="bg-gradient-orb orb-4"></div>
+        <div class="bg-gradient-orb orb-5"></div>
+    </div>
+
+    <!-- GSAP Floating Shapes Container -->
+    <div class="gsap-shapes-container" id="gsapShapes"></div>
+
+    <!-- Floating Particles -->
+    <div class="particles-container" id="particles"></div>
 
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white">
+    <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('public_dashboard') }}">
-                <i class="bi bi-bridge"></i> CreditBridge
+                <i class="bi bi-lightning-charge-fill"></i>
+                CreditBridge
             </a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item gsap-nav-item" data-delay="0.1">
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('public_dashboard') }}">
-                            <i class="bi bi-house"></i> Dashboard
+                            <i class="bi bi-house me-1"></i> Dashboard
                         </a>
                     </li>
-                    <li class="nav-item gsap-nav-item" data-delay="0.2">
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('public_assessment') }}">
-                            <i class="bi bi-calculator"></i> New Assessment
+                            <i class="bi bi-calculator me-1"></i> New Assessment
                         </a>
                     </li>
-                    <li class="nav-item gsap-nav-item" data-delay="0.3">
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('public_upload_documents') }}">
-                            <i class="bi bi-cloud-upload"></i> Upload Documents
+                            <i class="bi bi-cloud-upload me-1"></i> Documents
                         </a>
                     </li>
-                    <li class="nav-item gsap-nav-item" data-delay="0.4">
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('public_history') }}">
-                            <i class="bi bi-clock-history"></i> History
+                            <i class="bi bi-clock-history me-1"></i> History
                         </a>
                     </li>
                 </ul>
 
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
-                            data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle me-1"></i>{{ session.customer_name }}
+                <div class="d-flex align-items-center gap-3">
+                    <!-- Dark Mode Toggle -->
+                    <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode">
+                        <span class="theme-toggle-thumb">
+                            <i class="bi bi-sun-fill"></i>
+                            <i class="bi bi-moon-stars-fill"></i>
+                        </span>
+                    </button>
+
+                    <!-- User Dropdown -->
+                    <div class="dropdown">
+                        <a class="user-dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <span class="user-avatar">{{ session.customer_name[0] if session.customer_name else 'U'
+                                }}</span>
+                            <span class="d-none d-md-inline">{{ session.customer_name.split()[0] if
+                                session.customer_name else 'User' }}</span>
+                            <i class="bi bi-chevron-down" style="font-size: 12px; color: var(--text-muted);"></i>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown"
-                            style="min-width: 200px;">
-                            <li class="px-3 py-2 border-bottom">
-                                <small class="text-muted d-block">Logged in via Google</small>
-                                <strong class="text-truncate d-block" style="max-width: 170px;">{{
-                                    session.customer_email or session.customer_name }}</strong>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li class="px-3 py-2 border-bottom" style="border-color: var(--border-color) !important;">
+                                <small class="text-muted d-block">Logged in as</small>
+                                <strong style="color: var(--text-primary);">{{ session.customer_email or
+                                    session.customer_name }}</strong>
                             </li>
-                            <li>
-                                <a class="dropdown-item py-2" href="{{ url_for('bank_login') }}">
-                                    <i class="bi bi-bank2 me-2"></i>Bank Portal
-                                </a>
-                            </li>
-                            <li>
-                                <hr class="dropdown-divider">
-                            </li>
-                            <li>
-                                <a class="dropdown-item py-2 text-danger" href="{{ url_for('logout') }}">
+                            <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}">
                                     <i class="bi bi-box-arrow-right me-2"></i>Logout
-                                </a>
-                            </li>
+                                </a></li>
                         </ul>
-                    </li>
-                </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
@@ -322,8 +806,9 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         {% for category, message in messages %}
-        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show gsap-alert"
+        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
             role="alert">
+            <i class="bi bi-{{ 'exclamation-circle' if category == 'error' else 'check-circle' }} me-2"></i>
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
@@ -340,176 +825,652 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <div class="row">
+            <div class="row align-items-center">
                 <div class="col-md-6">
-                    <h5 class="gsap-footer-accent">CreditBridge</h5>
-                    <p class="mb-0" style="font-size: 1.1rem; opacity: 0.9;">Bridging Financial Gaps with
-                        Non-Traditional Credit Assessment</p>
+                    <p class="footer-text mb-0">
+                        <i class="bi bi-shield-check me-1"></i>
+                        © 2025 CreditBridge. Secured & Encrypted.
+                    </p>
                 </div>
                 <div class="col-md-6 text-md-end">
-                    <p class="mb-0">
-                        <a href="mailto:support@creditbridge.in"
-                            style="color: rgba(255,255,255,0.9)">support@creditbridge.in</a> |
-                        <small style="opacity: 0.7;">v2.0</small>
-                    </p>
+                    <a href="#" class="footer-link me-3" data-bs-toggle="modal"
+                        data-bs-target="#privacyModal">Privacy</a>
+                    <a href="#" class="footer-link me-3" data-bs-toggle="modal" data-bs-target="#termsModal">Terms</a>
+                    <a href="#" class="footer-link me-3" data-bs-toggle="modal" data-bs-target="#aiEthicsModal">AI
+                        Ethics</a>
+                    <a href="mailto:support@creditbridge.in" class="footer-link">Support</a>
                 </div>
             </div>
         </div>
     </footer>
 
+    <!-- Privacy Modal -->
+    <div class="modal fade" id="privacyModal" tabindex="-1" aria-labelledby="privacyModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content" style="background: #ffffff; color: #1f2937;">
+                <div class="modal-header" style="border-bottom: 1px solid #e5e7eb;">
+                    <h5 class="modal-title" id="privacyModalLabel" style="color: #1f2937; font-weight: 700;">
+                        <i class="bi bi-shield-lock me-2" style="color: #4f46e5;"></i>Privacy Policy
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="color: #374151; line-height: 1.7;">
+                    <p class="text-muted mb-4"><small>Last Updated: January 2025</small></p>
+
+                    <!-- Legal Compliance Statement -->
+                    <div
+                        style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
+                        <p style="margin: 0; color: #166534;">
+                            <i class="bi bi-shield-check me-2"></i>
+                            <strong>Our Commitment:</strong> CreditBridge is committed to protecting user privacy and
+                            personal data in compliance with applicable Indian laws, including the <strong>Digital
+                                Personal Data Protection Act (DPDP), 2023</strong>, the <strong>Information Technology
+                                Act, 2000</strong>, and related IT Rules. User data is collected only with explicit
+                            consent and solely for the purpose of credit assessment and verification. The platform
+                            follows data minimization principles, collecting only the information necessary for
+                            analysis. Sensitive data such as identity and financial documents is used strictly for
+                            verification and is not stored permanently or reused for training purposes. All data is
+                            securely processed using industry-standard security practices, role-based access control,
+                            and session management. Users retain the right to access, correct, or request deletion of
+                            their personal data in accordance with applicable regulations.
+                        </p>
+                    </div>
+
+                    <!-- Privacy Assessment Chart Section -->
+                    <div class="mb-5 p-4 rounded-4" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                        <h6 style="color: #1f2937; font-weight: 700; margin-bottom: 20px;"
+                            class="d-flex align-items-center">
+                            <i class="bi bi-bar-chart-fill me-2" style="color: #6366f1;"></i>
+                            Privacy & Security Compliance Score
+                        </h6>
+                        <div style="height: 300px; width: 100%;">
+                            <canvas id="privacyChart"></canvas>
+                        </div>
+                        <p class="small text-muted mt-3 mb-0">
+                            Our AI evaluates platform security across five key dimensions to ensure your data remains
+                            100% private and secure.
+                        </p>
+                    </div>
+
+                    <h6 style="color: #1f2937; font-weight: 600;">1. Information We Collect</h6>
+                    <p>CreditBridge collects the following information to provide our credit assessment services:</p>
+                    <ul>
+                        <li><strong>Personal Information:</strong> Name, email address, phone number, and date of birth
+                        </li>
+                        <li><strong>Identity Documents:</strong> Aadhaar card, PAN card for verification purposes</li>
+                        <li><strong>Financial Data:</strong> Bank statements, income details, and transaction history
+                        </li>
+                        <li><strong>Usage Data:</strong> How you interact with our platform and services</li>
+                    </ul>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">2. How We Use Your Information</h6>
+                    <p>Your data is used exclusively for:</p>
+                    <ul>
+                        <li>Generating accurate AI-powered credit assessments</li>
+                        <li>Verifying your identity and preventing fraud</li>
+                        <li>Improving our machine learning models and services</li>
+                        <li>Communicating important updates about your assessments</li>
+                    </ul>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">3. Data Security</h6>
+                    <p>We implement bank-grade security measures including:</p>
+                    <ul>
+                        <li>256-bit AES encryption for all data at rest and in transit</li>
+                        <li>Multi-factor authentication for account access</li>
+                        <li>Regular security audits and penetration testing</li>
+                        <li>Secure data centers with ISO 27001 certification</li>
+                    </ul>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">4. Data Sharing</h6>
+                    <p>We <strong>never sell</strong> your personal data. Information may only be shared with:</p>
+                    <ul>
+                        <li>Partner banks and financial institutions (with your consent)</li>
+                        <li>Regulatory authorities when legally required</li>
+                        <li>Service providers essential to our operations (under strict agreements)</li>
+                    </ul>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">5. Your Rights</h6>
+                    <p>You have the right to:</p>
+                    <ul>
+                        <li>Access and download your personal data</li>
+                        <li>Request correction of inaccurate information</li>
+                        <li>Delete your account and associated data</li>
+                        <li>Opt-out of marketing communications</li>
+                    </ul>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">6. Contact Us</h6>
+                    <p>For privacy-related queries, contact our Data Protection Officer:</p>
+                    <p><strong>Email:</strong> privacy@creditbridge.in<br>
+                        <strong>Phone:</strong> +91-800-123-4567
+                    </p>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #e5e7eb; background: #f9fafb;">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Understand</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms Modal -->
+    <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content" style="background: #ffffff; color: #1f2937;">
+                <div class="modal-header" style="border-bottom: 1px solid #e5e7eb;">
+                    <h5 class="modal-title" id="termsModalLabel" style="color: #1f2937; font-weight: 700;">
+                        <i class="bi bi-file-text me-2" style="color: #4f46e5;"></i>Terms of Service
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="color: #374151; line-height: 1.7;">
+                    <p class="text-muted mb-4"><small>Last Updated: January 2025</small></p>
+
+                    <!-- Terms Statement -->
+                    <div
+                        style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
+                        <p style="margin: 0; color: #1e40af;">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Important:</strong> By accessing or using the CreditBridge platform, users agree to
+                            these Terms and Conditions. CreditBridge provides an AI-based credit assessment service
+                            intended for informational and evaluation purposes only. The credit scores and reports
+                            generated are based on user-provided information and behavioral analysis and <strong>do not
+                                constitute a guarantee of loan approval</strong>. Users are responsible for providing
+                            accurate and truthful information. Any misuse of the platform, submission of false data, or
+                            attempt to manipulate results may lead to restricted access or account suspension.
+                            CreditBridge reserves the right to update system features, scoring logic, or reports to
+                            improve accuracy and security. All content, reports, and system outputs are the intellectual
+                            property of CreditBridge and must not be copied, modified, or redistributed without
+                            permission.
+                        </p>
+                    </div>
+
+                    <h6 style="color: #1f2937; font-weight: 600;">1. Acceptance of Terms</h6>
+                    <p>By accessing CreditBridge, you agree to be bound by these Terms of Service and all applicable
+                        laws and regulations.</p>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">2. Service Description</h6>
+                    <p>CreditBridge provides AI-powered credit assessment services that analyze financial behavior to
+                        generate credit scores for individuals and businesses.</p>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">3. User Responsibilities</h6>
+                    <ul>
+                        <li>Provide accurate and truthful information</li>
+                        <li>Maintain the confidentiality of your account credentials</li>
+                        <li>Not use the service for fraudulent purposes</li>
+                        <li>Comply with all applicable laws and regulations</li>
+                    </ul>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">4. Credit Score Disclaimer</h6>
+                    <p>Credit scores generated by CreditBridge are <strong>indicative assessments</strong> based on AI
+                        analysis. Final credit decisions remain at the discretion of lending institutions.</p>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">5. Limitation of Liability</h6>
+                    <p>CreditBridge shall not be liable for any indirect, incidental, or consequential damages arising
+                        from the use of our services.</p>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">6. Modifications</h6>
+                    <p>We reserve the right to modify these terms at any time. Continued use of the service constitutes
+                        acceptance of modified terms.</p>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">7. Governing Law</h6>
+                    <p>These terms are governed by the laws of India. Disputes shall be subject to the exclusive
+                        jurisdiction of courts in Bangalore, Karnataka.</p>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #e5e7eb; background: #f9fafb;">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Agree</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Ethics Modal -->
+    <div class="modal fade" id="aiEthicsModal" tabindex="-1" aria-labelledby="aiEthicsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content" style="background: #ffffff; color: #1f2937;">
+                <div class="modal-header" style="border-bottom: 1px solid #e5e7eb;">
+                    <h5 class="modal-title" id="aiEthicsModalLabel" style="color: #1f2937; font-weight: 700;">
+                        <i class="bi bi-robot me-2" style="color: #8b5cf6;"></i>Responsible AI & Ethics
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="color: #374151; line-height: 1.7;">
+                    <p class="text-muted mb-4"><small>AI Governance Framework | CreditBridge</small></p>
+
+                    <!-- AI Mission Statement -->
+                    <div
+                        style="background: #faf5ff; border-left: 4px solid #8b5cf6; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
+                        <p style="margin: 0; color: #6b21a8;">
+                            <i class="bi bi-lightbulb me-2"></i>
+                            <strong>Our AI Mission:</strong> CreditBridge AI is designed to assist with credit
+                            assessment support, document verification insights, and explainability under responsible AI
+                            principles. Our AI provides <strong>assistive insights only</strong> - all decisions are
+                            subject to human review by authorized personnel.
+                        </p>
+                    </div>
+
+                    <h6 style="color: #1f2937; font-weight: 600;">1. Consent & Purpose Limitation</h6>
+                    <ul>
+                        <li>Process user data only after <strong>explicit user consent</strong></li>
+                        <li>Use data strictly for creditworthiness assessment and verification</li>
+                        <li>Do NOT store, reuse, or learn from user data beyond the current request</li>
+                    </ul>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">2. Privacy & Data Protection</h6>
+                    <ul>
+                        <li>Treat all personal, financial, and identity data as <strong>confidential</strong></li>
+                        <li>Do not retain copies of documents or sensitive information</li>
+                        <li>Do not use data for training, improvement, or external sharing</li>
+                        <li>Follow principles aligned with <strong>India's DPDP Act, 2023</strong></li>
+                    </ul>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">3. Responsible AI & Fairness</h6>
+                    <ul>
+                        <li>Do not make final credit approval or rejection decisions</li>
+                        <li>Do not discriminate based on caste, religion, gender, location, or personal attributes</li>
+                        <li>Focus only on <strong>financial behavior, consistency, and authenticity signals</strong>
+                        </li>
+                        <li>Support inclusion for new-to-credit and underserved users</li>
+                    </ul>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">4. Human Oversight</h6>
+                    <ul>
+                        <li>AI output is <strong>assistive, not final</strong></li>
+                        <li>All decisions are subject to human review by authorized personnel</li>
+                        <li>Final credit decisions remain with lending institutions</li>
+                    </ul>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">5. Explainability</h6>
+                    <ul>
+                        <li>Provide clear, simple, non-technical explanations when requested</li>
+                        <li>Avoid complex model or algorithmic terminology unless explicitly asked</li>
+                        <li>Explain results in a way understandable to non-technical users</li>
+                    </ul>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">6. Security & Integrity</h6>
+                    <ul>
+                        <li>Do not generate or modify official scores, approvals, or reports</li>
+                        <li>Return only verification confidence, insights, or summaries</li>
+                        <li>Ensure outputs support auditability and transparency</li>
+                    </ul>
+
+                    <h6 style="color: #1f2937; font-weight: 600;" class="mt-4">7. AI Restrictions</h6>
+                    <div
+                        style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 12px; border-radius: 8px;">
+                        <ul style="margin: 0; color: #991b1b;">
+                            <li>Do NOT guarantee loan approval</li>
+                            <li>Do NOT override system rules or scoring logic</li>
+                            <li>Do NOT fabricate data or assume missing information</li>
+                        </ul>
+                    </div>
+
+                    <p class="mt-4" style="color: #6b7280; font-style: italic;">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Our AI responds in a professional, neutral, and compliant manner. If a request violates privacy,
+                        consent, or regulatory principles, it will politely refuse and explain the limitation.
+                    </p>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #e5e7eb; background: #f9fafb;">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Understand</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
-    <!-- Supercharged GSAP Animations -->
     <script>
-        // Register plugins
-        gsap.registerPlugin(ScrollTrigger, TextPlugin);
+        // Dark Mode Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
 
-        // Create floating particles
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            for (let i = 0; i < 12; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.top = Math.random() * 100 + '%';
-                particle.style.width = (Math.random() * 8 + 4) + 'px';
-                particle.style.height = particle.style.width;
-                particle.style.animationDelay = Math.random() * 20 + 's';
-                particle.style.animationDuration = (Math.random() * 30 + 20) + 's';
-                particlesContainer.appendChild(particle);
+        // Check saved theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        html.setAttribute('data-theme', savedTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+
+        // ============================================
+        // GSAP PROFESSIONAL BACKGROUND ANIMATIONS
+        // ============================================
+
+        // Initialize GSAP Canvas for connecting lines
+        const canvas = document.getElementById('gsapCanvas');
+        const ctx = canvas.getContext('2d');
+        let nodes = [];
+        let animationId;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Create floating nodes for connecting lines
+        class FloatingNode {
+            constructor() {
+                this.x = Math.random() * window.innerWidth;
+                this.y = Math.random() * window.innerHeight;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.radius = 2 + Math.random() * 2;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 0 || this.x > window.innerWidth) this.vx *= -1;
+                if (this.y < 0 || this.y > window.innerHeight) this.vy *= -1;
             }
         }
 
-        // Master Timeline for epic entrance
-        const masterTL = gsap.timeline();
+        // Initialize nodes
+        for (let i = 0; i < 50; i++) {
+            nodes.push(new FloatingNode());
+        }
 
-        // Navbar stagger animation with bounce
-        masterTL.from(".gsap-nav-item", {
-            duration: 1,
-            y: 50,
-            opacity: 0,
-            rotationX: -90,
-            stagger: 0.15,
-            ease: "back.out(2)",
-            delay: 0.5
-        }, 0);
+        // Draw connecting lines
+        function drawConnections() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            const lineColor = isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(102, 126, 234, 0.1)';
+            const nodeColor = isDark ? 'rgba(167, 139, 250, 0.6)' : 'rgba(102, 126, 234, 0.5)';
 
-        // Brand shine effect
-        masterTL.from(".navbar-brand", {
-            duration: 1.5,
-            scale: 0.5,
-            rotation: 360,
-            opacity: 0,
-            ease: "elastic.out(1, 0.5)"
-        }, 0);
+            nodes.forEach((node, i) => {
+                node.update();
 
-        // Floating particles
-        createParticles();
-        gsap.from(".particle", {
-            duration: 1,
-            scale: 0,
-            opacity: 0,
-            stagger: 0.1,
-            ease: "back.out(1.7)"
-        });
+                // Draw node
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+                ctx.fillStyle = nodeColor;
+                ctx.fill();
 
-        // Footer accent reveal with glow
-        gsap.from(".gsap-footer-accent::after", {
-            scaleX: 0,
-            duration: 1.5,
-            ease: "power3.out",
-            scrollTrigger: {
-                trigger: ".footer",
-                start: "top 85%",
-                toggleActions: "play none none reverse"
-            }
-        });
+                // Draw connections
+                nodes.forEach((otherNode, j) => {
+                    if (i !== j) {
+                        const dx = node.x - otherNode.x;
+                        const dy = node.y - otherNode.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
 
-        // Epic alert entrance
-        gsap.from(".gsap-alert", {
-            duration: 0.8,
-            y: 100,
-            opacity: 0,
-            rotationY: 45,
-            scale: 0.8,
-            stagger: 0.2,
-            ease: "back.out(1.7)"
-        });
-
-        // Continuous navbar shine effect
-        gsap.to(".nav-link", {
-            scale: 1.02,
-            duration: 2,
-            repeat: -1,
-            yoyo: true,
-            ease: "power2.inOut",
-            stagger: {
-                amount: 1,
-                from: "random"
-            }
-        });
-
-        // Shimmer effect on navbar brand
-        gsap.to(".navbar-brand", {
-            backgroundPosition: "200% 50%",
-            duration: 3,
-            repeat: -1,
-            ease: "none"
-        });
-
-        // Mouse follow shine on navbar
-        document.addEventListener('mousemove', (e) => {
-            const x = e.clientX / window.innerWidth;
-            const y = e.clientY / window.innerHeight;
-
-            gsap.to(".navbar-brand", {
-                x: (x - 0.5) * 20,
-                y: (y - 0.5) * 20,
-                duration: 0.5,
-                ease: "power2.out"
+                        if (distance < 150) {
+                            ctx.beginPath();
+                            ctx.moveTo(node.x, node.y);
+                            ctx.lineTo(otherNode.x, otherNode.y);
+                            ctx.strokeStyle = lineColor;
+                            ctx.lineWidth = 1 - distance / 150;
+                            ctx.stroke();
+                        }
+                    }
+                });
             });
-        });
 
-        // Parallax footer effect
-        ScrollTrigger.create({
-            trigger: ".footer",
-            start: "top bottom",
-            onEnter: () => {
-                gsap.to(".footer", {
-                    scale: 1.02,
+            animationId = requestAnimationFrame(drawConnections);
+        }
+        drawConnections();
+
+        // ============================================
+        // GSAP FLOATING GEOMETRIC SHAPES
+        // ============================================
+
+        const shapesContainer = document.getElementById('gsapShapes');
+        const shapeTypes = ['circle', 'square', 'triangle', 'diamond', 'hexagon', 'cross'];
+
+        function createGSAPShape() {
+            const shape = document.createElement('div');
+            const type = shapeTypes[Math.floor(Math.random() * shapeTypes.length)];
+            const size = 20 + Math.random() * 40;
+
+            shape.className = `gsap-shape ${type}`;
+
+            if (type !== 'triangle') {
+                shape.style.width = size + 'px';
+                shape.style.height = size + 'px';
+            }
+
+            shape.style.left = Math.random() * 100 + '%';
+            shape.style.top = Math.random() * 100 + '%';
+
+            shapesContainer.appendChild(shape);
+
+            // GSAP animation for the shape
+            const duration = 15 + Math.random() * 20;
+            const delay = Math.random() * 5;
+
+            gsap.timeline({ repeat: -1, delay: delay })
+                .to(shape, {
+                    opacity: 0.6 + Math.random() * 0.3,
                     duration: 2,
-                    ease: "elastic.out(1, 0.3)"
+                    ease: "power2.inOut"
+                })
+                .to(shape, {
+                    x: (Math.random() - 0.5) * 300,
+                    y: -window.innerHeight - 100,
+                    rotation: 360 + Math.random() * 360,
+                    scale: 0.5 + Math.random() * 0.5,
+                    duration: duration,
+                    ease: "none"
+                }, 0)
+                .to(shape, {
+                    opacity: 0,
+                    duration: 3,
+                    ease: "power2.inOut"
+                }, duration - 3)
+                .set(shape, {
+                    x: 0,
+                    y: 0,
+                    rotation: 0,
+                    scale: 1,
+                    left: Math.random() * 100 + '%',
+                    top: '100%'
                 });
+
+            return shape;
+        }
+
+        // Create initial shapes (reduced for performance)
+        for (let i = 0; i < 8; i++) {
+            setTimeout(() => createGSAPShape(), i * 300);
+        }
+
+        // ============================================
+        // GSAP ORB ANIMATIONS (Enhanced)
+        // ============================================
+
+        const orbs = document.querySelectorAll('.bg-gradient-orb');
+
+        orbs.forEach((orb, index) => {
+            const xRange = 50 + Math.random() * 100;
+            const yRange = 30 + Math.random() * 80;
+            const duration = 20 + index * 5 + Math.random() * 10;
+
+            gsap.to(orb, {
+                x: `random(-${xRange}, ${xRange})`,
+                y: `random(-${yRange}, ${yRange})`,
+                scale: `random(0.9, 1.15)`,
+                duration: duration,
+                ease: "sine.inOut",
+                repeat: -1,
+                yoyo: true,
+                repeatRefresh: true
+            });
+
+            // Subtle pulsing glow effect
+            gsap.to(orb, {
+                filter: 'blur(90px)',
+                opacity: 0.5 + Math.random() * 0.3,
+                duration: 4 + Math.random() * 3,
+                ease: "sine.inOut",
+                repeat: -1,
+                yoyo: true,
+                delay: index * 0.5
+            });
+        });
+
+        // ============================================
+        // ENHANCED PARTICLES WITH GSAP
+        // ============================================
+
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const colors = [
+                'rgba(102, 126, 234, 0.8)',
+                'rgba(139, 92, 246, 0.8)',
+                'rgba(236, 72, 153, 0.6)',
+                'rgba(59, 130, 246, 0.7)',
+                'rgba(16, 185, 129, 0.6)',
+                'rgba(251, 191, 36, 0.6)'
+            ];
+
+            for (let i = 0; i < 15; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+
+                const size = 3 + Math.random() * 5;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = '100%';
+                particle.style.opacity = '0';
+
+                container.appendChild(particle);
+
+                // GSAP particle animation
+                const duration = 12 + Math.random() * 18;
+                const delay = Math.random() * 15;
+
+                gsap.timeline({ repeat: -1, delay: delay })
+                    .set(particle, {
+                        y: 0,
+                        x: 0,
+                        scale: 0,
+                        opacity: 0,
+                        left: Math.random() * 100 + '%'
+                    })
+                    .to(particle, {
+                        y: -window.innerHeight - 150,
+                        x: (Math.random() - 0.5) * 200,
+                        rotation: Math.random() * 720,
+                        scale: 1,
+                        opacity: 0.8,
+                        duration: duration,
+                        ease: "none"
+                    })
+                    .to(particle, {
+                        opacity: 0,
+                        scale: 0.5,
+                        duration: 3,
+                        ease: "power2.in"
+                    }, duration - 3);
+            }
+        }
+        createParticles();
+
+        // Privacy Chart Initialization
+        let privacyChart = null;
+        const privacyModal = document.getElementById('privacyModal');
+
+        privacyModal.addEventListener('shown.bs.modal', function () {
+            const ctx = document.getElementById('privacyChart').getContext('2d');
+
+            // Modern colors
+            const colors = {
+                primary: '#6366f1',
+                secondary: '#a855f7',
+                success: '#10b981',
+                info: '#0ea5e9',
+                warning: '#f59e0b',
+                danger: '#ef4444'
+            };
+
+            if (privacyChart) {
+                privacyChart.destroy();
+            }
+
+            privacyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Data Protection', 'User Consent', 'Encryption', 'ID Security', 'Minimization'],
+                    datasets: [{
+                        label: 'Compliance Level (%)',
+                        data: [98, 100, 95, 92, 99],
+                        backgroundColor: [
+                            colors.primary,
+                            colors.success,
+                            colors.info,
+                            colors.secondary,
+                            colors.warning
+                        ],
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        barThickness: 40
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1f2937',
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: function (context) {
+                                    return context.parsed.y + '% Compliance';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20,
+                                font: { size: 11 },
+                                color: '#64748b'
+                            },
+                            grid: {
+                                color: '#f1f5f9',
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: { size: 11, weight: '500' },
+                                color: '#1f2937'
+                            },
+                            grid: { display: false }
+                        }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        });
+
+        // Active nav link
+        const currentPath = window.location.pathname;
+        document.querySelectorAll('.nav-link').forEach(link => {
+            if (link.getAttribute('href') === currentPath) {
+                link.classList.add('active');
             }
         });
 
-        // Enhanced hover effects
-        document.querySelectorAll('.nav-link').forEach((link, index) => {
-            link.addEventListener('mouseenter', () => {
-                gsap.timeline()
-                    .to(link, { scale: 1.1, duration: 0.3, ease: "back.out(2)" })
-                    .to(link, { rotationY: 360, duration: 0.6, ease: "power2.inOut" }, "-=0.2");
-            });
-
-            link.addEventListener('mouseleave', () => {
-                gsap.to(link, {
-                    scale: 1,
-                    rotationY: 0,
-                    duration: 0.4,
-                    ease: "back.out(1.7)"
-                });
-            });
-        });
-
-        // Infinite floating background animation
-        gsap.to("body::before", {
-            y: -50,
-            rotation: 360,
-            duration: 60,
-            repeat: -1,
-            ease: "none"
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            cancelAnimationFrame(animationId);
         });
     </script>
 

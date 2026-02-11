@@ -2,140 +2,910 @@
 
 {% block title %}Dashboard - CreditBridge{% endblock %}
 
+{% block styles %}
+<style>
+    /* Modern Dashboard Styles with Graphics */
+    .dashboard-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 24px;
+        padding: 40px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 32px;
+    }
+
+    .dashboard-hero::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .dashboard-hero::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: 10%;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero-greeting {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .hero-subtitle {
+        font-size: 16px;
+        opacity: 0.9;
+    }
+
+    .hero-graphic {
+        position: absolute;
+        right: 40px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 1;
+    }
+
+    .hero-illustration {
+        width: 180px;
+        height: 180px;
+        opacity: 0.9;
+    }
+
+    /* Score Card with Visual Gauge */
+    .score-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 32px;
+        box-shadow: var(--shadow);
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s;
+    }
+
+    .score-gauge {
+        width: 200px;
+        height: 200px;
+        margin: 0 auto 24px;
+        position: relative;
+    }
+
+    .gauge-bg {
+        fill: none;
+        stroke: var(--border-color);
+        stroke-width: 12;
+    }
+
+    .gauge-fill {
+        fill: none;
+        stroke-width: 12;
+        stroke-linecap: round;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        transition: stroke-dashoffset 1s ease-out;
+    }
+
+    .gauge-fill.excellent {
+        stroke: url(#gaugeGradientGreen);
+    }
+
+    .gauge-fill.good {
+        stroke: url(#gaugeGradientYellow);
+    }
+
+    .gauge-fill.poor {
+        stroke: url(#gaugeGradientRed);
+    }
+
+    .score-value {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+    }
+
+    .score-number {
+        font-size: 48px;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .score-number.excellent {
+        color: #10b981;
+    }
+
+    .score-number.good {
+        color: #f59e0b;
+    }
+
+    .score-number.poor {
+        color: #ef4444;
+    }
+
+    .score-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 4px;
+    }
+
+    .risk-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .risk-badge.low {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+
+    .risk-badge.medium {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    .risk-badge.high {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+
+    /* Stats Cards */
+    .stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 28px;
+        box-shadow: var(--shadow);
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(102, 126, 234, 0.15);
+    }
+
+    .stat-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .stat-icon.purple {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .stat-icon.blue {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    }
+
+    .stat-icon.green {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    .stat-icon.orange {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    .stat-icon i {
+        font-size: 24px;
+        color: white;
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+
+    .stat-graphic {
+        position: absolute;
+        right: -20px;
+        bottom: -20px;
+        opacity: 0.1;
+        font-size: 100px;
+    }
+
+    /* Quick Action Cards */
+    .action-card {
+        background: var(--bg-card);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        text-decoration: none;
+        color: var(--text-primary);
+        transition: all 0.3s;
+        border: 2px solid transparent;
+    }
+
+    .action-card:hover {
+        border-color: #667eea;
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(102, 126, 234, 0.2);
+        color: #1e293b;
+    }
+
+    .action-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .action-icon i {
+        font-size: 22px;
+        color: white;
+    }
+
+    .action-content h4 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .action-content p {
+        font-size: 13px;
+        color: #64748b;
+        margin: 0;
+    }
+
+    /* Chart Cards */
+    .chart-card {
+        background: var(--bg-card);
+        border-radius: 20px;
+        padding: 28px;
+        box-shadow: var(--shadow);
+        height: 100%;
+    }
+
+    .chart-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+    }
+
+    .chart-header h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .chart-header-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .chart-header-icon i {
+        color: white;
+        font-size: 16px;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+    }
+
+    .empty-state-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+    }
+
+    .empty-state-icon i {
+        font-size: 32px;
+        color: #667eea;
+    }
+
+    .empty-state h4 {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .empty-state p {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+    }
+
+    /* Activity Table */
+    .activity-table {
+        width: 100%;
+    }
+
+    .activity-table th {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 12px 16px;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .activity-table td {
+        padding: 16px;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 14px;
+    }
+
+    .activity-table tr:hover {
+        background: rgba(102, 126, 234, 0.05);
+    }
+
+    /* Insights Panel */
+    .insights-panel {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 28px;
+        color: var(--text-primary);
+        box-shadow: var(--shadow);
+    }
+
+    .insight-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .insight-item:last-child {
+        border-bottom: none;
+    }
+
+    .insight-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .insight-icon.insight-tip {
+        background: rgba(16, 185, 129, 0.2);
+    }
+
+    .insight-icon.insight-tip i {
+        color: #10b981;
+    }
+
+    .insight-icon.insight-alert {
+        background: rgba(245, 158, 11, 0.2);
+    }
+
+    .insight-icon.insight-alert i {
+        color: #f59e0b;
+    }
+
+    .insight-content h5 {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .insight-content p {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin: 0;
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-hero {
+            padding: 24px;
+        }
+
+        .hero-greeting {
+            font-size: 24px;
+        }
+
+        .hero-graphic {
+            display: none;
+        }
+
+        .score-gauge {
+            width: 160px;
+            height: 160px;
+        }
+
+        .score-number {
+            font-size: 36px;
+        }
+    }
+
+    /* Scrolling Notification Ticker */
+    .info-ticker {
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        padding: 10px 0;
+        margin-bottom: 24px;
+        border-radius: 12px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .ticker-wrapper {
+        display: flex;
+        overflow: hidden;
+    }
+
+    .ticker-content {
+        display: flex;
+        animation: tickerScroll 30s linear infinite;
+        white-space: nowrap;
+    }
+
+    .ticker-content:hover {
+        animation-play-state: paused;
+    }
+
+    @keyframes tickerScroll {
+        0% {
+            transform: translateX(0);
+        }
+
+        100% {
+            transform: translateX(-50%);
+        }
+    }
+
+    .ticker-item {
+        display: inline-flex;
+        align-items: center;
+        padding: 0 40px;
+        color: white;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .ticker-item i {
+        margin-right: 8px;
+        font-size: 16px;
+    }
+
+    .ticker-divider {
+        color: rgba(255, 255, 255, 0.4);
+        padding: 0 20px;
+    }
+
+    /* Onboarding Modal Styles */
+    .guide-modal .modal-content {
+        background: var(--bg-card);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--border-color);
+        border-radius: 24px;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .guide-modal-header {
+        border-bottom: 1px solid var(--border-color);
+        padding: 24px 32px;
+    }
+
+    .guide-modal-body {
+        padding: 32px;
+    }
+
+    .guide-step {
+        text-align: center;
+        padding: 20px;
+        height: 100%;
+        transition: all 0.3s;
+    }
+
+    .guide-step-icon {
+        width: 64px;
+        height: 64px;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+    }
+
+    .guide-step-icon i {
+        font-size: 28px;
+        color: #667eea;
+    }
+
+    .guide-step-title {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        color: var(--text-primary);
+    }
+
+    .guide-step-desc {
+        font-size: 14px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    .guide-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 50px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+    }
+
+    .badge-step1 {
+        background: rgba(102, 126, 234, 0.15);
+        color: #667eea;
+    }
+
+    .badge-step2 {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+    }
+
+    .badge-step3 {
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+    }
+
+    .badge-step3 {
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+    }
+
+    /* Modal Logo Styles */
+    .modal-logo-icon {
+        width: 48px;
+        height: 48px;
+        background: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-right: 15px;
+    }
+
+    .guide-modal .modal-header {
+        border-bottom: 1px solid var(--border-color);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
-    <!-- Welcome Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                <div>
-                    <h2 class="fw-bold mb-1">Welcome back, {{ customer.full_name.split()[0] }}!</h2>
-                    <p class="text-muted mb-0">Here's your credit assessment overview</p>
-                </div>
-                <a href="{{ url_for('public_assessment') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> New Assessment
-                </a>
+    <!-- Scrolling Info Ticker -->
+    <div class="info-ticker">
+        <div class="ticker-wrapper">
+            <div class="ticker-content">
+                <span class="ticker-item"><i class="bi bi-stars"></i> CreditBridge uses Non-Traditional Data to assess
+                    your creditworthiness</span>
+                <span class="ticker-divider">•</span>
+                <span class="ticker-item"><i class="bi bi-phone"></i> UPI transactions, digital payments & mobile
+                    banking patterns analyzed</span>
+                <span class="ticker-divider">•</span>
+                <span class="ticker-item"><i class="bi bi-file-earmark-check"></i> AI-powered document verification for
+                    faster approvals</span>
+                <span class="ticker-divider">•</span>
+                <span class="ticker-item"><i class="bi bi-graph-up"></i> No traditional credit history? No problem - we
+                    evaluate your financial behavior</span>
+                <span class="ticker-divider">•</span>
+                <span class="ticker-item"><i class="bi bi-shield-check"></i> Bank-grade security with encrypted data
+                    processing</span>
+                <span class="ticker-divider">•</span>
+                <!-- Duplicate for seamless loop -->
+                <span class="ticker-item"><i class="bi bi-stars"></i> CreditBridge uses Non-Traditional Data to assess
+                    your creditworthiness</span>
+                <span class="ticker-divider">•</span>
+                <span class="ticker-item"><i class="bi bi-phone"></i> UPI transactions, digital payments & mobile
+                    banking patterns analyzed</span>
+                <span class="ticker-divider">•</span>
+                <span class="ticker-item"><i class="bi bi-file-earmark-check"></i> AI-powered document verification for
+                    faster approvals</span>
+                <span class="ticker-divider">•</span>
+                <span class="ticker-item"><i class="bi bi-graph-up"></i> No traditional credit history? No problem - we
+                    evaluate your financial behavior</span>
+                <span class="ticker-divider">•</span>
+                <span class="ticker-item"><i class="bi bi-shield-check"></i> Bank-grade security with encrypted data
+                    processing</span>
+                <span class="ticker-divider">•</span>
             </div>
         </div>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="row g-4 mb-4">
-        <!-- Credit Score Card -->
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    {% if latest_assessment %}
-                    <div class="score-circle mx-auto mb-3">
-                        <span
-                            class="score-value {% if latest_assessment.credit_score >= 750 %}score-high{% elif latest_assessment.credit_score >= 600 %}score-medium{% else %}score-low{% endif %}">
-                            {{ latest_assessment.credit_score }}
-                        </span>
-                        <span class="score-label">Credit Score</span>
-                    </div>
-                    <span
-                        class="badge-risk {% if 'Low' in latest_assessment.risk_category %}badge-low{% elif 'Medium' in latest_assessment.risk_category %}badge-medium{% else %}badge-high{% endif %}">
-                        {{ latest_assessment.risk_category }}
-                    </span>
-                    {% else %}
-                    <div class="empty-state py-4">
-                        <i class="bi bi-speedometer2 d-block mb-3" style="font-size: 3rem; opacity: 0.3;"></i>
-                        <p class="text-muted mb-3">No assessment yet</p>
-                        <a href="{{ url_for('public_assessment') }}" class="btn btn-primary btn-sm">
-                            Get Your Score
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
+    <!-- Hero Section with Graphic -->
+    <div class="dashboard-hero">
+        <div class="hero-content">
+            <h1 class="hero-greeting">Welcome back, {{ customer.full_name.split()[0] }}! 👋</h1>
+            <p class="hero-subtitle">Here's your financial health overview</p>
         </div>
-
-        <!-- Documents Card -->
-        <div class="col-md-6 col-lg-4">
-            <div class="card stat-card primary h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <p class="stat-label mb-1">Documents Uploaded</p>
-                            <h2 class="stat-value mb-0">{{ document_count }}</h2>
-                            <p class="stat-label mt-2 mb-0">
-                                <i class="bi bi-arrow-up"></i> Verified documents boost your score
-                            </p>
-                        </div>
-                        <i class="bi bi-file-earmark-check stat-icon"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Actions Card -->
-        <div class="col-md-12 col-lg-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <i class="bi bi-lightning-charge me-2"></i>Quick Actions
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{{ url_for('public_upload_documents') }}" class="btn btn-outline-primary">
-                            <i class="bi bi-cloud-upload"></i> Upload Documents
-                        </a>
-                        {% if latest_assessment %}
-                        <a href="{{ url_for('public_download_report', id=latest_assessment.id) }}"
-                            class="btn btn-outline-primary">
-                            <i class="bi bi-file-pdf"></i> Download Report
-                        </a>
-                        {% endif %}
-                        <a href="{{ url_for('public_history') }}" class="btn btn-outline-primary">
-                            <i class="bi bi-clock-history"></i> View History
-                        </a>
-                    </div>
-                </div>
-            </div>
+        <div class="hero-graphic">
+            <svg class="hero-illustration" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Credit Card Illustration -->
+                <rect x="20" y="60" width="160" height="100" rx="12" fill="rgba(255,255,255,0.2)" />
+                <rect x="35" y="80" width="50" height="35" rx="4" fill="rgba(255,255,255,0.3)" />
+                <rect x="35" y="130" width="80" height="8" rx="4" fill="rgba(255,255,255,0.25)" />
+                <rect x="125" y="130" width="40" height="8" rx="4" fill="rgba(255,255,255,0.25)" />
+                <!-- Floating Elements -->
+                <circle cx="160" cy="40" r="20" fill="rgba(255,255,255,0.15)" />
+                <circle cx="40" cy="45" r="12" fill="rgba(255,255,255,0.1)" />
+                <path d="M150 35l5-10 5 10-5 5-5-5z" fill="rgba(255,255,255,0.3)" />
+            </svg>
         </div>
     </div>
+
+
 
     <div class="row g-4">
-        <!-- Behavioral Metrics Chart -->
-        <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-header">
-                    <i class="bi bi-radar me-2"></i>Behavioral Profile
-                </div>
-                <div class="card-body">
-                    {% if latest_assessment %}
-                    <div class="chart-container" style="height: 300px;">
-                        <canvas id="radarChart"></canvas>
+        <!-- Credit Score Card with Gauge -->
+        <div class="col-lg-4">
+            <div class="score-card">
+                {% if latest_assessment %}
+                <div class="score-gauge">
+                    <svg viewBox="0 0 200 200">
+                        <defs>
+                            <linearGradient id="gaugeGradientGreen" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#10b981" />
+                                <stop offset="100%" style="stop-color:#059669" />
+                            </linearGradient>
+                            <linearGradient id="gaugeGradientYellow" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#f59e0b" />
+                                <stop offset="100%" style="stop-color:#d97706" />
+                            </linearGradient>
+                            <linearGradient id="gaugeGradientRed" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#ef4444" />
+                                <stop offset="100%" style="stop-color:#dc2626" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="85" class="gauge-bg" />
+                        <circle cx="100" cy="100" r="85"
+                            class="gauge-fill {% if latest_assessment.credit_score >= 750 %}excellent{% elif latest_assessment.credit_score >= 600 %}good{% else %}poor{% endif %}"
+                            style="stroke-dasharray: 534; stroke-dashoffset: {{ 534 - (534 * latest_assessment.credit_score / 900) }}" />
+                    </svg>
+                    <div class="score-value">
+                        <div
+                            class="score-number {% if latest_assessment.credit_score >= 750 %}excellent{% elif latest_assessment.credit_score >= 600 %}good{% else %}poor{% endif %}">
+                            {{ latest_assessment.credit_score }}
+                        </div>
+                        <div class="score-label">Credit Score</div>
                     </div>
-                    {% else %}
-                    <div class="empty-state">
-                        <i class="bi bi-graph-up"></i>
-                        <h5>No Data Available</h5>
-                        <p class="mb-0">Complete an assessment to see your behavioral profile</p>
-                    </div>
-                    {% endif %}
                 </div>
+                <span
+                    class="risk-badge {% if 'Low' in latest_assessment.risk_category %}low{% elif 'Medium' in latest_assessment.risk_category %}medium{% else %}high{% endif %}">
+                    <i class="bi bi-shield-check"></i>
+                    {{ latest_assessment.risk_category }} Risk
+                </span>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="bi bi-speedometer2"></i>
+                    </div>
+                    <h4>No Score Yet</h4>
+                    <p>Get your credit score in just 5 minutes</p>
+                    <a href="{{ url_for('public_assessment') }}" class="btn btn-primary">
+                        <i class="bi bi-play-circle me-2"></i>Start Assessment
+                    </a>
+                </div>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Score History Chart -->
+        <!-- Stats Cards -->
+        <div class="col-lg-8">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="bi bi-file-earmark-check"></i>
+                        </div>
+                        <div class="stat-value">{{ document_count }}</div>
+                        <div class="stat-label">Documents Uploaded</div>
+                        <i class="bi bi-files stat-graphic"></i>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
+                        <div class="stat-value">{{ score_history|length }}</div>
+                        <div class="stat-label">Assessments Completed</div>
+                        <i class="bi bi-bar-chart-fill stat-graphic"></i>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="insights-panel">
+                        <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">
+                            <i class="bi bi-lightbulb me-2"></i>Smart Insights
+                        </h4>
+                        <div class="insight-item">
+                            <div class="insight-icon insight-tip">
+                                <i class="bi bi-arrow-up-circle"></i>
+                            </div>
+                            <div class="insight-content">
+                                <h5>Boost Your Score</h5>
+                                <p>Upload more verified documents to improve your credit score by up to 50 points</p>
+                            </div>
+                        </div>
+                        <div class="insight-item">
+                            <div class="insight-icon insight-alert">
+                                <i class="bi bi-clock"></i>
+                            </div>
+                            <div class="insight-content">
+                                <h5>Regular Check-ups</h5>
+                                <p>Check your score monthly to track your financial health progress</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row g-4 mt-2">
+        <div class="col-md-4">
+            <a href="{{ url_for('public_assessment') }}" class="action-card">
+                <div class="action-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <i class="bi bi-plus-circle"></i>
+                </div>
+                <div class="action-content">
+                    <h4>New Assessment</h4>
+                    <p>Check your latest credit score</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{{ url_for('public_upload_documents') }}" class="action-card">
+                <div class="action-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                    <i class="bi bi-cloud-upload"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Upload Documents</h4>
+                    <p>Add documents to boost score</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            {% if latest_assessment %}
+            <a href="{{ url_for('public_download_report', id=latest_assessment.id) }}" class="action-card">
+                <div class="action-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <i class="bi bi-file-pdf"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Download Report</h4>
+                    <p>Get your detailed PDF report</p>
+                </div>
+            </a>
+            {% else %}
+            <a href="{{ url_for('public_history') }}" class="action-card">
+                <div class="action-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div class="action-content">
+                    <h4>View History</h4>
+                    <p>See all your past assessments</p>
+                </div>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mt-2">
         <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-header">
-                    <i class="bi bi-graph-up-arrow me-2"></i>Score History
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3>
+                        <span class="chart-header-icon"><i class="bi bi-pie-chart"></i></span>
+                        Behavioral Profile
+                    </h3>
                 </div>
-                <div class="card-body">
-                    {% if score_history %}
-                    <div class="chart-container" style="height: 300px;">
-                        <canvas id="historyChart"></canvas>
+                {% if latest_assessment %}
+                <div style="height: 280px;">
+                    <script id="radarData" type="application/json">{{ latest_assessment.features_json | safe }}</script>
+                    <canvas id="radarChart"></canvas>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="bi bi-radar"></i>
                     </div>
-                    {% else %}
-                    <div class="empty-state">
+                    <h4>No Data Available</h4>
+                    <p>Complete an assessment to see your profile</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3>
+                        <span class="chart-header-icon"><i class="bi bi-graph-up"></i></span>
+                        Score History
+                    </h3>
+                </div>
+                {% if score_history %}
+                <div style="height: 280px;">
+                    <script id="historyData" type="application/json">
+                        [
+                            {% for entry in score_history | reverse %}
+                            {"date": "{{ entry.created_at.strftime("%d %b") }}", "score": {{ entry.score or 0 }}}{% if not loop.last %},{% endif %}
+                            {% endfor %}
+                        ]
+                    </script>
+                    <canvas id="historyChart"></canvas>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
                         <i class="bi bi-clock-history"></i>
-                        <h5>No History Yet</h5>
-                        <p class="mb-0">Your score history will appear here after assessments</p>
                     </div>
-                    {% endif %}
+                    <h4>No History Yet</h4>
+                    <p>Your score trend will appear here after assessments</p>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -144,74 +914,185 @@
     {% if score_history %}
     <div class="row mt-4">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <i class="bi bi-activity me-2"></i>Recent Activity
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3>
+                        <span class="chart-header-icon"><i class="bi bi-activity"></i></span>
+                        Recent Activity
+                    </h3>
+                    <a href="{{ url_for('public_history') }}" class="btn btn-sm btn-outline-primary">View All</a>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Score</th>
-                                    <th>Risk Category</th>
-                                    <th>Documents</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for entry in score_history %}
-                                <tr>
-                                    <td>{{ entry.created_at.strftime('%d %b %Y') }}</td>
-                                    <td>
-                                        <span
-                                            class="fw-bold {% if entry.score >= 750 %}text-success{% elif entry.score >= 600 %}text-warning{% else %}text-danger{% endif %}">
-                                            {{ entry.score }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span
-                                            class="badge-risk {% if 'Low' in entry.risk_category %}badge-low{% elif 'Medium' in entry.risk_category %}badge-medium{% else %}badge-high{% endif %}">
-                                            {{ entry.risk_category }}
-                                        </span>
-                                    </td>
-                                    <td>{{ entry.document_count }}</td>
-                                    <td>
-                                        <a href="{{ url_for('public_result', id=entry.assessment_id) }}"
-                                            class="btn btn-sm btn-outline-primary">
-                                            View Details
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="table-responsive">
+                    <table class="activity-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Score</th>
+                                <th>Risk Level</th>
+                                <th>Documents</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in score_history %}
+                            <tr>
+                                <td><strong>{{ entry.created_at.strftime('%d %b %Y') }}</strong></td>
+                                <td>
+                                    <span
+                                        class="{% if entry.score >= 750 %}text-success{% elif entry.score >= 600 %}text-warning{% else %}text-danger{% endif %}"
+                                        style="font-weight: 700;">
+                                        {{ entry.score }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span
+                                        class="risk-badge {% if 'Low' in entry.risk_category %}low{% elif 'Medium' in entry.risk_category %}medium{% else %}high{% endif %}">
+                                        {{ entry.risk_category }}
+                                    </span>
+                                </td>
+                                <td>{{ entry.document_count }} docs</td>
+                                <td>
+                                    <a href="{{ url_for('public_result', id=entry.assessment_id) }}"
+                                        class="btn btn-sm btn-primary">
+                                        View <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
     {% endif %}
+
+    <!-- Welcome Guide Modal -->
+    <div class="modal fade guide-modal" id="welcomeGuideModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="guide-modal-header d-flex align-items-center justify-content-between p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="modal-logo-icon">
+                            <i class="bi bi-rocket-takeoff"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-1" style="font-weight: 700;">Welcome to CreditBridge!</h4>
+                            <p class="text-secondary mb-0" style="font-size: 14px;">Your journey to financial freedom
+                                starts here</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="guide-modal-body">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="guide-step">
+                                <span class="guide-badge badge-step1">Step 01</span>
+                                <div class="guide-step-icon">
+                                    <i class="bi bi-person-badge"></i>
+                                </div>
+                                <h5 class="guide-step-title">Assessment</h5>
+                                <p class="guide-step-desc">Complete your behavioral test to establish your initial
+                                    credit profile.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="guide-step">
+                                <span class="guide-badge badge-step2">Step 02</span>
+                                <div class="guide-step-icon">
+                                    <i class="bi bi-file-earmark-check"></i>
+                                </div>
+                                <h5 class="guide-step-title">Verification</h5>
+                                <p class="guide-step-desc">Upload bank statements & UPI history to boost your credit
+                                    score.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="guide-step">
+                                <span class="guide-badge badge-step3">Step 03</span>
+                                <div class="guide-step-icon">
+                                    <i class="bi bi-file-earmark-pdf"></i>
+                                </div>
+                                <h5 class="guide-step-title">Download Report</h5>
+                                <p class="guide-step-desc">Get your detailed PDF credit report with behavioral insights
+                                    instantly.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-4">
+                        <button type="button" id="confirmGuideBtn" class="btn btn-primary px-5 py-2"
+                            data-bs-dismiss="modal" style="border-radius: 12px; font-weight: 600;">
+                            Got it, Let's Go!
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    {% if latest_assessment %}
-    // Radar Chart Data
-    const features = {{ latest_assessment.features_json | safe }};
-    CreditBridge.createRadarChart('radarChart', features);
-    {% endif %}
+    document.addEventListener('DOMContentLoaded', function () {
+        // 1. Radar Chart Initialization
+        const radarScript = document.getElementById('radarData');
+        if (radarScript && typeof CreditBridge !== 'undefined') {
+            try {
+                let featuresData = JSON.parse(radarScript.textContent);
 
-    {% if score_history %}
-    // Score History Data
-    const historyData = [
-        {% for entry in score_history | reverse %}
-    { date: '{{ entry.created_at.strftime("%d %b") }}', score: { { entry.score } } } {% if not loop.last %}, {% endif %}
-    {% endfor %}
-    ];
-    CreditBridge.createScoreHistoryChart('historyChart', historyData);
-    {% endif %}
+                // Handle nested structures
+                let finalFeatures = featuresData;
+                if (featuresData && featuresData.behavioral) {
+                    finalFeatures = { ...featuresData.behavioral, ...featuresData.document };
+                }
+
+                CreditBridge.createRadarChart('radarChart', finalFeatures);
+            } catch (err) {
+                console.error('Dashboard: Radar Chart error', err);
+            }
+        }
+
+        // 2. Score History Chart Initialization
+        const historyScript = document.getElementById('historyData');
+        if (historyScript && typeof CreditBridge !== 'undefined') {
+            try {
+                const historyItems = JSON.parse(historyScript.textContent);
+
+                if (historyItems && historyItems.length > 0) {
+                    // Force line chart method
+                    CreditBridge.createScoreHistoryChart('historyChart', historyItems);
+                }
+            } catch (err) {
+                console.error('Dashboard: History Chart error', err);
+            }
+        }
+
+        // 3. Onboarding Modal Auto-trigger (Strictly persistent per email on CLICK)
+        // 3. Onboarding Modal Auto-trigger (Strictly persistent per email on CLICK)
+        const modalEl = document.getElementById('welcomeGuideModal');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            const userEmail = '{{ customer.email|safe }}';
+            const userKey = 'guide_confirmed_v4_' + userEmail;
+            const hasConfirmed = localStorage.getItem(userKey);
+
+            if (!hasConfirmed) {
+                const guideModal = new bootstrap.Modal(modalEl);
+                const confirmBtn = document.getElementById('confirmGuideBtn');
+
+                // ONLY set persistent storage when they actually click the button
+                if (confirmBtn) {
+                    confirmBtn.addEventListener('click', function () {
+                        localStorage.setItem(userKey, 'true');
+                    });
+                }
+
+                setTimeout(() => {
+                    guideModal.show();
+                }, 1000);
+            }
+        }
+    });
 </script>
 {% endblock %}

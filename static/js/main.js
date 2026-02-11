@@ -5,8 +5,63 @@
 
 // ─── Dark Mode Detection ────────────────────────────────────────────────────
 function isDarkMode() {
-    return document.body.classList.contains('dark-mode');
+    return document.documentElement.getAttribute('data-theme') === 'dark';
 }
+
+// ─── Chart Registry & Theme Updates ────────────────────────────────────────
+const activeCharts = [];
+
+function updateAllCharts() {
+    const defaults = getChartDefaults();
+    const riskColors = getRiskChartColors();
+
+    // Update global defaults
+    Chart.defaults.color = defaults.textColor;
+
+    activeCharts.forEach(chart => {
+        if (!chart) return;
+
+        // Update scales if they exist
+        if (chart.options.scales) {
+            Object.values(chart.options.scales).forEach(scale => {
+                if (scale.ticks) scale.ticks.color = defaults.tickColor;
+                if (scale.grid) scale.grid.color = defaults.gridColor;
+                if (scale.pointLabels) scale.pointLabels.color = defaults.textColor;
+                if (scale.angleLines) scale.angleLines.color = defaults.gridColor;
+            });
+        }
+
+        // Update legend
+        if (chart.options.plugins && chart.options.plugins.legend) {
+            if (chart.options.plugins.legend.labels) {
+                chart.options.plugins.legend.labels.color = defaults.textColor;
+            }
+        }
+
+        // Specific dataset updates based on chart type
+        chart.data.datasets.forEach(dataset => {
+            if (chart.config.type === 'radar' || chart.config.type === 'line') {
+                dataset.pointBorderColor = isDarkMode() ? '#1e293b' : '#fff';
+            }
+            if (chart.config.type === 'doughnut') {
+                dataset.backgroundColor = riskColors.backgrounds;
+            }
+        });
+
+        chart.update('none'); // Update without animation for smoother transition
+    });
+}
+
+// Watch for theme changes
+const themeObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'data-theme') {
+            updateAllCharts();
+        }
+    });
+});
+
+themeObserver.observe(document.documentElement, { attributes: true });
 
 // ─── Chart.js Default Configuration ────────────────────────────────────────
 Chart.defaults.font.family = "'Inter', sans-serif";
@@ -86,6 +141,27 @@ function createRadarChart(canvasId, features) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
+    // Defensive check: if features is still a string (though it should be parsed), parse it
+    if (typeof features === 'string') {
+        try {
+            features = JSON.parse(features);
+        } catch (e) {
+            console.error("Radar Chart: Failed to parse features string", e);
+            return;
+        }
+    }
+
+    if (!features) {
+        console.warn("Radar Chart: No features data provided");
+        return;
+    }
+
+    // Flatten nested structure if present
+    let finalFeatures = features;
+    if (features.behavioral) {
+        finalFeatures = { ...features.behavioral, ...features.document };
+    }
+
     const defaults = getChartDefaults();
     const dark = isDarkMode();
 
@@ -99,15 +175,15 @@ function createRadarChart(canvasId, features) {
     ];
 
     const data = [
-        (features.income_stability_index || 0) * 100,
-        (features.expense_control_ratio || 0) * 100,
-        (features.payment_consistency_score || 0) * 100,
-        (features.digital_activity_score || 0) * 100,
-        (features.savings_discipline_ratio || 0) * 100,
-        (features.entrepreneurial_score || 0) * 100
+        (finalFeatures.income_stability_index || 0) * 100,
+        (finalFeatures.expense_control_ratio || 0) * 100,
+        (finalFeatures.payment_consistency_score || 0) * 100,
+        (finalFeatures.digital_activity_score || 0) * 100,
+        (finalFeatures.savings_discipline_ratio || 0) * 100,
+        (finalFeatures.entrepreneurial_score || 0) * 100
     ];
 
-    new Chart(ctx, {
+    const radarChart = new Chart(ctx, {
         type: 'radar',
         data: {
             labels: labels,
@@ -157,6 +233,8 @@ function createRadarChart(canvasId, features) {
             }
         }
     });
+
+    activeCharts.push(radarChart);
 }
 
 // ─── Line Chart (Score History) ────────────────────────────────────────────
@@ -166,10 +244,22 @@ function createScoreHistoryChart(canvasId, historyData) {
 
     const defaults = getChartDefaults();
     const dark = isDarkMode();
-    const labels = historyData.map(item => item.date);
-    const scores = historyData.map(item => item.score);
 
-    new Chart(ctx, {
+    // Ensure we have an array
+    let dataPoints = Array.isArray(historyData) ? [...historyData] : [];
+
+    // If only one data point, add a virtual baseline to show a "line"
+    if (dataPoints.length === 1) {
+        dataPoints.unshift({
+            date: 'Initial',
+            score: 300 // Standard baseline for credit scoring
+        });
+    }
+
+    const labels = dataPoints.map(item => item.date);
+    const scores = dataPoints.map(item => item.score);
+
+    const historyChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
@@ -209,6 +299,8 @@ function createScoreHistoryChart(canvasId, historyData) {
             }
         }
     });
+
+    activeCharts.push(historyChart);
 }
 
 // ─── Pie Chart (Risk Distribution) ─────────────────────────────────────────
@@ -219,7 +311,7 @@ function createRiskPieChart(canvasId, riskData) {
     const defaults = getChartDefaults();
     const riskColors = getRiskChartColors();
 
-    new Chart(ctx, {
+    const riskChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: ['Low Risk', 'Medium Risk', 'High Risk'],
@@ -242,6 +334,8 @@ function createRiskPieChart(canvasId, riskData) {
             }
         }
     });
+
+    activeCharts.push(riskChart);
 }
 
 // ─── Bar Chart (Daily Assessments) ─────────────────────────────────────────
@@ -249,7 +343,7 @@ function createDailyAssessmentsChart(canvasId, dailyData) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
-    new Chart(ctx, {
+    const dailyChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: dailyData.labels || [],
@@ -289,6 +383,8 @@ function createDailyAssessmentsChart(canvasId, dailyData) {
             }
         }
     });
+
+    activeCharts.push(dailyChart);
 }
 
 // ─── Multi-line Chart (Analytics Trends) ───────────────────────────────────
@@ -296,7 +392,7 @@ function createTrendsChart(canvasId, trendsData) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
-    new Chart(ctx, {
+    const trendsChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: trendsData.labels || [],
@@ -307,7 +403,8 @@ function createTrendsChart(canvasId, trendsData) {
                     borderColor: chartColors.success,
                     backgroundColor: 'transparent',
                     tension: 0.4,
-                    pointRadius: 3
+                    pointRadius: 3,
+                    pointBorderColor: isDarkMode() ? '#1e293b' : '#fff'
                 },
                 {
                     label: 'Medium Risk',
@@ -315,7 +412,8 @@ function createTrendsChart(canvasId, trendsData) {
                     borderColor: chartColors.warning,
                     backgroundColor: 'transparent',
                     tension: 0.4,
-                    pointRadius: 3
+                    pointRadius: 3,
+                    pointBorderColor: isDarkMode() ? '#1e293b' : '#fff'
                 },
                 {
                     label: 'High Risk',
@@ -323,7 +421,8 @@ function createTrendsChart(canvasId, trendsData) {
                     borderColor: chartColors.danger,
                     backgroundColor: 'transparent',
                     tension: 0.4,
-                    pointRadius: 3
+                    pointRadius: 3,
+                    pointBorderColor: isDarkMode() ? '#1e293b' : '#fff'
                 }
             ]
         },
@@ -349,6 +448,8 @@ function createTrendsChart(canvasId, trendsData) {
             }
         }
     });
+
+    activeCharts.push(trendsChart);
 }
 
 // ─── Form Validation Helpers ───────────────────────────────────────────────

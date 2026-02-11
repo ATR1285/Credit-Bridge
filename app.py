@@ -1513,6 +1513,76 @@ def google_callback():
         flash(f'Login failed: {str(e)}', 'error')
         return redirect(url_for('landing'))
 
+@app.route('/auth/local-login', methods=['GET', 'POST'])
+def local_login():
+    """Local email-based login for public portal (no Google OAuth required)"""
+    if request.method == 'GET':
+        return render_template('public/local_login.html')
+    
+    try:
+        email = request.form.get('email', '').strip().lower()
+        full_name = request.form.get('full_name', '').strip()
+        
+        # Validate email
+        if not email:
+            flash('Email address is required.', 'error')
+            return redirect(url_for('local_login'))
+        
+        # Check email format
+        import re
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            flash('Please enter a valid email address (e.g., user@example.com).', 'error')
+            return redirect(url_for('local_login'))
+        
+        # Find or create customer by email
+        customer = Customer.query.filter_by(email=email).first()
+        
+        if not customer:
+            # Create new customer with local login
+            if not full_name:
+                flash('Full name is required for new accounts.', 'error')
+                return redirect(url_for('local_login'))
+            
+            if len(full_name) < 2:
+                flash('Please enter your full name (at least 2 characters).', 'error')
+                return redirect(url_for('local_login'))
+            
+            if len(full_name) > 100:
+                flash('Name is too long. Please use a shorter name (max 100 characters).', 'error')
+                return redirect(url_for('local_login'))
+            
+            # Check that name contains only letters and spaces (no numbers)
+            if any(char.isdigit() for char in full_name):
+                flash('Name should not contain numbers. Please enter a valid name.', 'error')
+                return redirect(url_for('local_login'))
+            
+            customer = Customer(
+                google_id=f'local_{uuid.uuid4().hex}',  # Generate a unique local ID
+                email=email,
+                full_name=full_name,
+                is_verified=True  # Local users are auto-verified
+            )
+            db.session.add(customer)
+            db.session.commit()
+            flash(f'Account created successfully! Welcome, {full_name}!', 'success')
+        else:
+            # Welcome message is already shown in the dashboard hero section
+            pass
+        
+        # Set session
+        session['customer_id'] = customer.id
+        session['customer_name'] = customer.full_name
+        session['customer_email'] = customer.email
+        session['portal_type'] = 'public'
+        
+        return redirect(url_for('public_dashboard'))
+        
+    except Exception as e:
+        print(f"Local login error: {e}")
+        flash(f'Login failed: {str(e)}', 'error')
+        return redirect(url_for('local_login'))
+
 @app.route('/auth/logout')
 def logout():
     """Logout from public portal"""
@@ -1759,7 +1829,8 @@ def public_result(id):
     return render_template('public/result.html',
                          assessment=assessment,
                          features=features,
-                         suggestions=suggestions)
+                         suggestions=suggestions,
+                         customer=assessment.user.customer)
 
 @app.route('/public/upload-documents', methods=['GET', 'POST'])
 @login_required_public
@@ -3436,7 +3507,7 @@ def seed_branches():
         db.session.add(branch)
     
     db.session.commit()
-    print("✓ Seeded 3 demo branches")
+    print("[OK] Seeded 3 demo branches")
 
 
 def seed_employees():
@@ -3621,7 +3692,7 @@ def seed_employees():
         andheri.manager_id = branch_mgr_andheri.id
     
     db.session.commit()
-    print("✓ Seeded 8 demo employees with 5-role hierarchy")
+    print("[OK] Seeded 8 demo employees with 5-role hierarchy")
 
 
 def seed_sample_assessments():
@@ -3635,7 +3706,7 @@ def seed_sample_assessments():
     loan_officer = Employee.query.filter_by(username='loan1').first()
     
     if not branch_manager:
-        print("⚠ No employees found, skipping assessment seed")
+        print("[!] No employees found, skipping assessment seed")
         return
     
     # Sample assessment data
@@ -3772,7 +3843,7 @@ def seed_sample_assessments():
         db.session.add(assessment)
     
     db.session.commit()
-    print(f"✓ Seeded {len(sample_data)} sample assessments")
+    print(f"[OK] Seeded {len(sample_data)} sample assessments")
 
 
 # Application startup
@@ -3788,7 +3859,7 @@ def create_app():
     with app.app_context():
         # Create database tables
         db.create_all()
-        print("✓ Database tables created")
+        print("[OK] Database tables created")
         
         # Seed employees
         seed_employees()
@@ -3799,16 +3870,16 @@ def create_app():
         # Initialize ML model
         print("Initializing ML model...")
         ml_model = initialize_model()
-        print("✓ ML model ready")
+        print("[OK] ML model ready")
         
         # Initialize document analyzer
         gemini_key = os.getenv('GEMINI_API_KEY')
         document_analyzer = DocumentAnalyzer(gemini_key)
-        print("✓ Document analyzer ready")
+        print("[OK] Document analyzer ready")
         
         # Initialize PDF generator
         pdf_generator = CreditReportGenerator()
-        print("✓ PDF generator ready")
+        print("[OK] PDF generator ready")
 
 if __name__ == '__main__':
     create_app()
@@ -3816,8 +3887,8 @@ if __name__ == '__main__':
     print("\n" + "="*50)
     print("CREDITBRIDGE APPLICATION STARTED")
     print("="*50)
-    print("🌐 Application URL: http://localhost:5000")
-    print("\n📋 Demo Bank Logins (Password: pass123)")
+    print("Application URL: http://localhost:5000")
+    print("\nDemo Bank Logins (Password: pass123)")
     print("   admin      - Head of Bank")
     print("   manager1   - Branch Manager (Mumbai)")
     print("   manager2   - Branch Manager (Andheri)")
@@ -3826,7 +3897,7 @@ if __name__ == '__main__':
     print("   loan2      - Loan Officer (Andheri)")
     print("   analyst1   - Credit Analyst (Mumbai)")
     print("   analyst2   - Credit Analyst (Andheri)")
-    print("\n🔐 Public Portal: http://localhost:5000/")
+    print("\nPublic Portal: http://localhost:5000/")
     print("="*50)
     
     app.run(host='0.0.0.0', port=5000, debug=True)

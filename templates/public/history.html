@@ -2,6 +2,261 @@
 
 {% block title %}Score History - CreditBridge{% endblock %}
 
+{% block styles %}
+<style>
+    /* Chart container - required for Chart.js */
+    .chart-container {
+        position: relative;
+        height: 250px;
+        width: 100%;
+    }
+
+    .chart-container canvas {
+        max-width: 100%;
+    }
+
+    /* ===== LIGHT MODE (default) ===== */
+    .card {
+        background: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        border-radius: 16px;
+        color: #1f2937;
+    }
+
+    .card-header {
+        background: rgba(79, 70, 229, 0.05) !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+        color: #1f2937 !important;
+        font-weight: 600;
+    }
+
+    .card-body {
+        background: transparent !important;
+    }
+
+    /* Table light mode */
+    .table {
+        color: #1f2937 !important;
+        --bs-table-bg: transparent;
+        --bs-table-hover-bg: rgba(0, 0, 0, 0.03);
+    }
+
+    .table thead {
+        background: rgba(79, 70, 229, 0.08) !important;
+    }
+
+    .table thead th {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+        color: #374151 !important;
+        font-weight: 600;
+    }
+
+    .table tbody tr {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    }
+
+    .table tbody tr:hover {
+        background: rgba(79, 70, 229, 0.05) !important;
+    }
+
+    /* Text colors light mode */
+    h2.fw-bold {
+        color: #1f2937 !important;
+    }
+
+    .text-muted {
+        color: #6b7280 !important;
+    }
+
+    /* Score colors - same for both modes */
+    .text-success {
+        color: #10b981 !important;
+    }
+
+    .text-warning {
+        color: #f59e0b !important;
+    }
+
+    .text-danger {
+        color: #ef4444 !important;
+    }
+
+    .text-primary {
+        color: #4f46e5 !important;
+    }
+
+    /* Risk badges light mode */
+    .badge-risk {
+        padding: 0.35em 0.75em;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: 600;
+    }
+
+    .badge-low {
+        background: rgba(16, 185, 129, 0.15);
+        color: #059669;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-medium {
+        background: rgba(245, 158, 11, 0.15);
+        color: #d97706;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-high {
+        background: rgba(239, 68, 68, 0.15);
+        color: #dc2626;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    /* Buttons light mode */
+    .btn-outline-primary {
+        border-color: #4f46e5 !important;
+        color: #4f46e5 !important;
+    }
+
+    .btn-outline-primary:hover {
+        background: rgba(79, 70, 229, 0.1) !important;
+    }
+
+    /* Badge */
+    .badge.bg-light {
+        background: rgba(0, 0, 0, 0.08) !important;
+        color: #374151 !important;
+    }
+
+    /* Empty state light mode */
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: #9ca3af;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .empty-state h5 {
+        color: #1f2937;
+    }
+
+    .empty-state p {
+        color: #6b7280;
+    }
+
+    /* ===== DARK MODE ===== */
+    [data-theme="dark"] .card {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: white;
+    }
+
+    [data-theme="dark"] .card-header {
+        background: rgba(255, 255, 255, 0.08) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+    }
+
+    [data-theme="dark"] .table {
+        color: rgba(255, 255, 255, 0.9) !important;
+        --bs-table-hover-bg: rgba(255, 255, 255, 0.05);
+    }
+
+    [data-theme="dark"] .table thead {
+        background: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    [data-theme="dark"] .table thead th {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+
+    [data-theme="dark"] .table tbody tr {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+
+    [data-theme="dark"] .table tbody tr:hover {
+        background: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    [data-theme="dark"] h2.fw-bold {
+        color: white !important;
+    }
+
+    [data-theme="dark"] .text-muted {
+        color: rgba(255, 255, 255, 0.6) !important;
+    }
+
+    /* Dark mode score colors - brighter for dark bg */
+    [data-theme="dark"] .text-success {
+        color: #00FFA3 !important;
+    }
+
+    [data-theme="dark"] .text-warning {
+        color: #FFC107 !important;
+    }
+
+    [data-theme="dark"] .text-danger {
+        color: #FF6B9D !important;
+    }
+
+    [data-theme="dark"] .text-primary {
+        color: #00D9FF !important;
+    }
+
+    /* Dark mode badges */
+    [data-theme="dark"] .badge-low {
+        background: linear-gradient(135deg, rgba(0, 255, 163, 0.2), rgba(0, 217, 255, 0.2));
+        color: #00FFA3;
+        border: 1px solid rgba(0, 255, 163, 0.3);
+    }
+
+    [data-theme="dark"] .badge-medium {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.2), rgba(255, 152, 0, 0.2));
+        color: #FFC107;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+
+    [data-theme="dark"] .badge-high {
+        background: linear-gradient(135deg, rgba(255, 107, 157, 0.2), rgba(255, 71, 87, 0.2));
+        color: #FF6B9D;
+        border: 1px solid rgba(255, 107, 157, 0.3);
+    }
+
+    [data-theme="dark"] .btn-outline-primary {
+        border-color: rgba(0, 217, 255, 0.5) !important;
+        color: #00D9FF !important;
+    }
+
+    [data-theme="dark"] .btn-outline-primary:hover {
+        background: rgba(0, 217, 255, 0.2) !important;
+        border-color: #00D9FF !important;
+    }
+
+    [data-theme="dark"] .badge.bg-light {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    [data-theme="dark"] .empty-state i {
+        color: rgba(255, 255, 255, 0.3);
+    }
+
+    [data-theme="dark"] .empty-state h5 {
+        color: white;
+    }
+
+    [data-theme="dark"] .empty-state p {
+        color: rgba(255, 255, 255, 0.6);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
     <div class="row mb-4">
