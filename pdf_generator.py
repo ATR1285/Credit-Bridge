@@ -146,12 +146,13 @@ class BankGradePDFGenerator:
         ax.set_ylim(-0.25, 1)
         ax.axis('off')
         
-        temp = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-        self.temp_files.append(temp.name)
-        plt.savefig(temp.name, dpi=150, bbox_inches='tight', 
+        fd, temp_path = tempfile.mkstemp(suffix='.png')
+        os.close(fd)
+        self.temp_files.append(temp_path)
+        plt.savefig(temp_path, dpi=150, bbox_inches='tight', 
                    facecolor='white', edgecolor='none')
         plt.close()
-        return temp.name
+        return temp_path
 
     def _create_radar_chart(self, metrics):
         """Create behavioral metrics radar chart"""
@@ -183,11 +184,12 @@ class BankGradePDFGenerator:
         ax.set_yticklabels(['25%', '50%', '75%', '100%'], size=7, color='#6B7280')
         ax.grid(color='#E5E7EB', linewidth=0.5)
         
-        temp = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-        self.temp_files.append(temp.name)
-        plt.savefig(temp.name, dpi=150, bbox_inches='tight', facecolor='white')
+        fd, temp_path = tempfile.mkstemp(suffix='.png')
+        os.close(fd)
+        self.temp_files.append(temp_path)
+        plt.savefig(temp_path, dpi=150, bbox_inches='tight', facecolor='white')
         plt.close()
-        return temp.name
+        return temp_path
 
     def _create_projection_chart(self, current_score):
         """Create score projection line chart"""
@@ -213,11 +215,12 @@ class BankGradePDFGenerator:
         ax.spines['right'].set_visible(False)
         ax.tick_params(labelsize=9)
         
-        temp = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-        self.temp_files.append(temp.name)
-        plt.savefig(temp.name, dpi=150, bbox_inches='tight', facecolor='white')
+        fd, temp_path = tempfile.mkstemp(suffix='.png')
+        os.close(fd)
+        self.temp_files.append(temp_path)
+        plt.savefig(temp_path, dpi=150, bbox_inches='tight', facecolor='white')
         plt.close()
-        return temp.name
+        return temp_path
 
     def _create_comparison_bars(self, metrics):
         """Create user vs average comparison bars"""
@@ -246,11 +249,12 @@ class BankGradePDFGenerator:
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         
-        temp = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-        self.temp_files.append(temp.name)
-        plt.savefig(temp.name, dpi=150, bbox_inches='tight', facecolor='white')
+        fd, temp_path = tempfile.mkstemp(suffix='.png')
+        os.close(fd)
+        self.temp_files.append(temp_path)
+        plt.savefig(temp_path, dpi=150, bbox_inches='tight', facecolor='white')
         plt.close()
-        return temp.name
+        return temp_path
 
     def _create_qr_code(self, report_id):
         """Generate QR code for report verification"""
@@ -259,10 +263,11 @@ class BankGradePDFGenerator:
         qr.make(fit=True)
         img = qr.make_image(fill_color="#1F2937", back_color="white")
         
-        temp = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-        self.temp_files.append(temp.name)
-        img.save(temp.name)
-        return temp.name
+        fd, temp_path = tempfile.mkstemp(suffix='.png')
+        os.close(fd)
+        self.temp_files.append(temp_path)
+        img.save(temp_path)
+        return temp_path
 
     def _generate_hash(self, report_id, score, timestamp):
         """Generate SHA-256 verification hash"""
@@ -294,10 +299,11 @@ class BankGradePDFGenerator:
 
     def generate_report(self, assessment_data, user_data, processed_by=None):
         """Generate complete 10-page bank-grade PDF report"""
-        temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+        fd, pdf_path = tempfile.mkstemp(suffix='.pdf')
+        os.close(fd)
         
         doc = SimpleDocTemplate(
-            temp_pdf.name, pagesize=A4,
+            pdf_path, pagesize=A4,
             rightMargin=self.margin, leftMargin=self.margin,
             topMargin=self.margin, bottomMargin=self.margin
         )
@@ -728,7 +734,7 @@ class BankGradePDFGenerator:
                 pass
         self.temp_files = []
         
-        return temp_pdf.name
+        return pdf_path
 
 
 # Backwards compatibility alias

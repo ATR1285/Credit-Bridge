@@ -2535,19 +2535,23 @@ def public_upload_documents():
             return redirect(url_for('public_upload_documents'))
         
         # Save document record
+        # Map analyzer output keys to model fields
+        ai_score = analysis_result.get('authenticity_score', analysis_result.get('ai_verification_score', 50))
+        analysis_json_str = json.dumps(analysis_result.get('extracted_features', analysis_result.get('analysis_json', {})))
+
         document = DocumentUpload(
             customer_id=customer.id,
             document_type=document_type,
             file_path=analysis_result['file_path'],
             file_size=analysis_result['file_size'],
             verified_status=analysis_result['verified_status'],
-            ai_verification_score=analysis_result['ai_verification_score'],
-            analysis_json=analysis_result['analysis_json']
+            ai_verification_score=ai_score,
+            analysis_json=analysis_json_str
         )
         db.session.add(document)
         db.session.commit()
         
-        flash(f'Document uploaded successfully! Verification score: {analysis_result["ai_verification_score"]:.0f}%', 'success')
+        flash(f'Document uploaded successfully! Verification score: {ai_score:.0f}%', 'success')
         return redirect(url_for('public_upload_documents'))
         
     except Exception as e:
